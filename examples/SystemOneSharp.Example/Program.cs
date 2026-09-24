@@ -1,7 +1,10 @@
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using SystemOneSharp;
+
+var runStarted = Stopwatch.GetTimestamp();
 
 try
 {
@@ -57,28 +60,29 @@ try
     Console.WriteLine($"Ticket: {ticket}");
     Console.WriteLine();
 
-    var response = await client.DecideAsync(request);
-    var choice = (ChoiceAnswer)response.Answers["department"];
-    var score = (ScoreAnswer)response.Answers["urgency"];
-    var noul = (NoulAnswer)response.Answers["refund_requested"];
+    PrintHeading("Combined request · all three questions");
+    var (combined, combinedTime) = await TimedDecisionAsync(client, request);
+    PrintChoice((ChoiceAnswer)combined.Answers["department"]);
+    PrintScore((ScoreAnswer)combined.Answers["urgency"]);
+    PrintNoul((NoulAnswer)combined.Answers["refund_requested"]);
+    PrintCallSummary(combined, combinedTime);
 
-    PrintHeading("Choice · handling team");
-    Console.WriteLine($"Selected: {choice.Choice}   Confidence: {Percent(choice.Confidence)}");
-    foreach (var (label, probability) in choice.Probabilities.OrderByDescending(pair => pair.Value))
-        PrintBar(label, probability);
+    PrintHeading("Separate requests · one question each");
     Console.WriteLine();
 
-    PrintHeading("Score · urgency");
-    Console.WriteLine($"Score: {score.Score.ToString("0.00", CultureInfo.InvariantCulture)} / {score.Legend.Count - 1}   Confidence: {Percent(score.Confidence)}");
-    foreach (var (level, description) in score.Legend.OrderBy(pair => int.Parse(pair.Key, CultureInfo.InvariantCulture)))
-        PrintBar($"{level}: {description}", score.Probabilities.GetValueOrDefault(level));
-    Console.WriteLine();
+    var (choiceOnly, choiceTime) = await TimedDecisionAsync(client, SingleQuestion(request, "department"));
+    PrintChoice((ChoiceAnswer)choiceOnly.Answers["department"]);
+    PrintCallSummary(choiceOnly, choiceTime);
 
-    PrintHeading("Noul · refund requested");
-    PrintBar("P(yes)", noul.Noul);
-    Console.WriteLine();
+    var (scoreOnly, scoreTime) = await TimedDecisionAsync(client, SingleQuestion(request, "urgency"));
+    PrintScore((ScoreAnswer)scoreOnly.Answers["urgency"]);
+    PrintCallSummary(scoreOnly, scoreTime);
 
-    Console.WriteLine($"Model: {response.Model}   Tokens: {response.Usage.InputTokens} in / {response.Usage.OutputTokens} out");
+    var (noulOnly, noulTime) = await TimedDecisionAsync(client, SingleQuestion(request, "refund_requested"));
+    PrintNoul((NoulAnswer)noulOnly.Answers["refund_requested"]);
+    PrintCallSummary(noulOnly, noulTime);
+
+    Console.WriteLine($"Total console run: {Milliseconds(Stopwatch.GetElapsedTime(runStarted))} ms");
     return 0;
 }
 catch (SystemOneApiException ex)
@@ -94,6 +98,53 @@ catch (Exception ex) when (ex is IOException or JsonException or ArgumentExcepti
 }
 
 static string Percent(double value) => (value * 100).ToString("0.0", CultureInfo.InvariantCulture) + "%";
+
+static string Milliseconds(TimeSpan elapsed) => elapsed.TotalMilliseconds.ToString("0.0", CultureInfo.InvariantCulture);
+
+static SystemOneRequest SingleQuestion(SystemOneRequest source, string id) => new()
+{
+    State = source.State,
+    Questions = new Dictionary<string, SystemOneQuestion> { [id] = source.Questions[id] }
+};
+
+static async Task<(SystemOneResponse Response, TimeSpan Elapsed)> TimedDecisionAsync(
+    ISystemOneClient client, SystemOneRequest request)
+{
+    var started = Stopwatch.GetTimestamp();
+    var response = await client.DecideAsync(request);
+    return (response, Stopwatch.GetElapsedTime(started));
+}
+
+static void PrintChoice(ChoiceAnswer answer)
+{
+    PrintHeading("Choice · handling team");
+    Console.WriteLine($"Selected: {answer.Choice}   Confidence: {Percent(answer.Confidence)}");
+    foreach (var (label, probability) in answer.Probabilities.OrderByDescending(pair => pair.Value))
+        PrintBar(label, probability);
+    Console.WriteLine();
+}
+
+static void PrintScore(ScoreAnswer answer)
+{
+    PrintHeading("Score · urgency");
+    Console.WriteLine($"Score: {answer.Score.ToString("0.00", CultureInfo.InvariantCulture)} / {answer.Legend.Count - 1}   Confidence: {Percent(answer.Confidence)}");
+    foreach (var (level, description) in answer.Legend.OrderBy(pair => int.Parse(pair.Key, CultureInfo.InvariantCulture)))
+        PrintBar($"{level}: {description}", answer.Probabilities.GetValueOrDefault(level));
+    Console.WriteLine();
+}
+
+static void PrintNoul(NoulAnswer answer)
+{
+    PrintHeading("Noul · refund requested");
+    PrintBar("P(yes)", answer.Noul);
+    Console.WriteLine();
+}
+
+static void PrintCallSummary(SystemOneResponse response, TimeSpan elapsed)
+{
+    Console.WriteLine($"Call time: {Milliseconds(elapsed)} ms   Model: {response.Model}   Tokens: {response.Usage.InputTokens} in / {response.Usage.OutputTokens} out");
+    Console.WriteLine();
+}
 
 static void PrintHeading(string text)
 {
