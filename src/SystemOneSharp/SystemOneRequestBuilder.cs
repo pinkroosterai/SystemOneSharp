@@ -3,11 +3,13 @@ using System.Text.Json.Nodes;
 
 namespace SystemOneSharp;
 
+/// <summary>Builds a validated decision request with Choice, Score, and Noul questions.</summary>
 public sealed class SystemOneRequestBuilder
 {
     private JsonNode? _state;
     private readonly Dictionary<string, SystemOneQuestion> _questions = new();
 
+    /// <summary>Sets a plain-text state.</summary>
     public SystemOneRequestBuilder WithState(string state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -15,6 +17,7 @@ public sealed class SystemOneRequestBuilder
         return this;
     }
 
+    /// <summary>Sets a structured JSON state using a copy of the supplied node.</summary>
     public SystemOneRequestBuilder WithState(JsonNode state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -22,6 +25,7 @@ public sealed class SystemOneRequestBuilder
         return this;
     }
 
+    /// <summary>Serializes an object as the state.</summary>
     public SystemOneRequestBuilder WithState<T>(T state)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -29,12 +33,14 @@ public sealed class SystemOneRequestBuilder
         return this;
     }
 
+    /// <summary>Adds a Choice question with plain-text instructions.</summary>
     public SystemOneRequestBuilder AddChoice(string id, string instructions, Action<ChoiceQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
         return AddChoice(id, JsonValue.Create(instructions)!, configure);
     }
 
+    /// <summary>Adds a Choice question with structured instructions.</summary>
     public SystemOneRequestBuilder AddChoice(string id, JsonNode instructions, Action<ChoiceQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
@@ -48,12 +54,14 @@ public sealed class SystemOneRequestBuilder
         });
     }
 
+    /// <summary>Adds a Score question with plain-text instructions.</summary>
     public SystemOneRequestBuilder AddScore(string id, string instructions, Action<ScoreQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
         return AddScore(id, JsonValue.Create(instructions)!, configure);
     }
 
+    /// <summary>Adds a Score question with structured instructions.</summary>
     public SystemOneRequestBuilder AddScore(string id, JsonNode instructions, Action<ScoreQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
@@ -67,18 +75,22 @@ public sealed class SystemOneRequestBuilder
         });
     }
 
+    /// <summary>Adds a Noul question with plain-text instructions and optional criteria.</summary>
     public SystemOneRequestBuilder AddNoul(string id, string instructions, Action<NoulQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
         return AddNoul(id, JsonValue.Create(instructions)!, configure);
     }
 
+    /// <summary>Adds a Noul question without criteria.</summary>
     public SystemOneRequestBuilder AddNoul(string id, string instructions)
         => AddNoul(id, instructions, _ => { });
 
+    /// <summary>Adds a Noul question with structured instructions and no criteria.</summary>
     public SystemOneRequestBuilder AddNoul(string id, JsonNode instructions)
         => AddNoul(id, instructions, _ => { });
 
+    /// <summary>Adds a Noul question with structured instructions and optional criteria.</summary>
     public SystemOneRequestBuilder AddNoul(string id, JsonNode instructions, Action<NoulQuestionBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(instructions);
@@ -92,6 +104,7 @@ public sealed class SystemOneRequestBuilder
         });
     }
 
+    /// <summary>Validates and returns a separate snapshot of the request.</summary>
     public SystemOneRequest Build()
     {
         var request = new SystemOneRequest
