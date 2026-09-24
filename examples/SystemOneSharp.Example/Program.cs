@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using SystemOneSharp;
 
 var runStarted = Stopwatch.GetTimestamp();
@@ -36,25 +35,18 @@ try
     });
 
     const string ticket = "I was charged twice for March. Please refund the duplicate today or I will cancel.";
-    var request = new SystemOneRequest
-    {
-        State = JsonValue.Create(ticket)!,
-        Questions = new Dictionary<string, SystemOneQuestion>
-        {
-            ["department"] = new ChoiceQuestion("Which team should handle this ticket?", new Dictionary<string, string?>
-            {
-                ["billing"] = "Payments, invoices, and refunds",
-                ["technical"] = "Bugs and product failures",
-                ["account"] = "Login and account access"
-            }),
-            ["urgency"] = new ScoreQuestion("How urgent is this ticket?", [
-                "Routine; no time pressure",
-                "Needs attention soon",
-                "Time-sensitive or likely to escalate"
-            ]),
-            ["refund_requested"] = new NoulQuestion("Does the customer explicitly request a refund?")
-        }
-    };
+    var request = new SystemOneRequestBuilder()
+        .WithState(ticket)
+        .AddChoice("department", "Which team should handle this ticket?", choice => choice
+            .Option("billing", "Payments, invoices, and refunds")
+            .Option("technical", "Bugs and product failures")
+            .Option("account", "Login and account access"))
+        .AddScore("urgency", "How urgent is this ticket?", score => score
+            .Level("Routine; no time pressure")
+            .Level("Needs attention soon")
+            .Level("Time-sensitive or likely to escalate"))
+        .AddNoul("refund_requested", "Does the customer explicitly request a refund?")
+        .Build();
 
     PrintHeading("System One decision example");
     Console.WriteLine($"Ticket: {ticket}");
@@ -62,24 +54,24 @@ try
 
     PrintHeading("Combined request · all three questions");
     var (combined, combinedTime) = await TimedDecisionAsync(client, request);
-    PrintChoice((ChoiceAnswer)combined.Answers["department"]);
-    PrintScore((ScoreAnswer)combined.Answers["urgency"]);
-    PrintNoul((NoulAnswer)combined.Answers["refund_requested"]);
+    PrintChoice(combined.GetChoice("department"));
+    PrintScore(combined.GetScore("urgency"));
+    PrintNoul(combined.GetNoul("refund_requested"));
     PrintCallSummary(combined, combinedTime);
 
     PrintHeading("Separate requests · one question each");
     Console.WriteLine();
 
     var (choiceOnly, choiceTime) = await TimedDecisionAsync(client, SingleQuestion(request, "department"));
-    PrintChoice((ChoiceAnswer)choiceOnly.Answers["department"]);
+    PrintChoice(choiceOnly.GetChoice("department"));
     PrintCallSummary(choiceOnly, choiceTime);
 
     var (scoreOnly, scoreTime) = await TimedDecisionAsync(client, SingleQuestion(request, "urgency"));
-    PrintScore((ScoreAnswer)scoreOnly.Answers["urgency"]);
+    PrintScore(scoreOnly.GetScore("urgency"));
     PrintCallSummary(scoreOnly, scoreTime);
 
     var (noulOnly, noulTime) = await TimedDecisionAsync(client, SingleQuestion(request, "refund_requested"));
-    PrintNoul((NoulAnswer)noulOnly.Answers["refund_requested"]);
+    PrintNoul(noulOnly.GetNoul("refund_requested"));
     PrintCallSummary(noulOnly, noulTime);
 
     Console.WriteLine($"Total console run: {Milliseconds(Stopwatch.GetElapsedTime(runStarted))} ms");

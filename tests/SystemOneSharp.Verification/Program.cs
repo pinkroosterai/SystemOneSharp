@@ -47,8 +47,77 @@ using (var http = new HttpClient(mixedHandler))
     Check(result.Answers["department"] is ChoiceAnswer { Choice: "billing" }, "choice parsed");
     Check(result.Answers["urgency"] is ScoreAnswer { Score: 1.25 }, "score parsed");
     Check(result.Answers["refund"] is NoulAnswer { Noul: 0.95 }, "noul parsed");
+    Check(result.GetChoice("department").Choice == "billing", "typed choice lookup");
+    Check(result.GetScore("urgency").Score == 1.25, "typed score lookup");
+    Check(result.GetNoul("refund").Noul == 0.95, "typed noul lookup");
+    CheckThrows<KeyNotFoundException>(() => result.GetChoice("absent"));
+    CheckThrows<InvalidOperationException>(() => result.GetScore("department"));
     Check(result.Usage.InputTokens == 42 && mixedHandler.Calls == 1, "usage and call count");
 }
+
+var stateNode = JsonNode.Parse("""{"body":"Refund needed"}""")!;
+var instructionNode = JsonNode.Parse("""{"task":"route ticket"}""")!;
+var optionNode = JsonNode.Parse("""{"description":"refunds"}""")!;
+var fluentBuilder = new SystemOneRequestBuilder()
+    .WithState(stateNode)
+    .AddChoice("department", instructionNode, choice => choice
+        .OptionJson("billing", optionNode)
+        .Option("support", null))
+    .AddScore("urgency", "How urgent?", score => score
+        .Level("routine")
+        .LevelJson(JsonNode.Parse("""{"label":"soon"}""")!))
+    .AddNoul("refund", "Refund requested?", noul => noul
+        .CriteriaJson(JsonNode.Parse("""{"means":"yes"}""")!, JsonValue.Create("no")!));
+var fluentRequest = fluentBuilder.Build();
+stateNode["body"] = "changed source";
+instructionNode["task"] = "changed source";
+optionNode["description"] = "changed source";
+Check(fluentRequest.State["body"]!.GetValue<string>() == "Refund needed", "builder clones state input");
+Check(((ChoiceQuestion)fluentRequest.Questions["department"]).Instructions["task"]!.GetValue<string>() == "route ticket",
+    "builder clones instruction input");
+var fluentHandler = new StubHandler(async (message, _) =>
+{
+    using var body = JsonDocument.Parse(await message.Content!.ReadAsStringAsync());
+    var root = body.RootElement;
+    Check(root.GetProperty("state").GetProperty("body").GetString() == "Refund needed", "fluent object state serialized");
+    var questions = root.GetProperty("questions");
+    Check(questions.GetProperty("department").GetProperty("instructions").GetProperty("task").GetString() == "route ticket",
+        "structured instructions serialized");
+    Check(questions.GetProperty("department").GetProperty("criteria").GetProperty("billing")
+        .GetProperty("description").GetString() == "refunds", "structured choice option serialized");
+    Check(questions.GetProperty("department").GetProperty("criteria").GetProperty("support").ValueKind == JsonValueKind.Null,
+        "null choice option serialized");
+    Check(questions.GetProperty("urgency").GetProperty("criteria")[1].GetProperty("label").GetString() == "soon",
+        "structured score level serialized");
+    Check(questions.GetProperty("refund").GetProperty("criteria").GetProperty("true").GetProperty("means").GetString() == "yes",
+        "structured noul criteria serialized");
+    return JsonResponse(HttpStatusCode.OK, success);
+});
+using (var http = new HttpClient(fluentHandler))
+    await new SystemOneClient(http, new SystemOneOptions()).DecideAsync(fluentRequest);
+
+var firstBuild = fluentBuilder.Build();
+firstBuild.State["body"] = "changed build";
+((ChoiceQuestion)firstBuild.Questions["department"]).Instructions["task"] = "changed build";
+var secondBuild = fluentBuilder.Build();
+Check(secondBuild.State["body"]!.GetValue<string>() == "Refund needed" &&
+    ((ChoiceQuestion)secondBuild.Questions["department"]).Instructions["task"]!.GetValue<string>() == "route ticket",
+    "build returns independent snapshots");
+var objectState = new SystemOneRequestBuilder().WithState(new { body = "from object" })
+    .AddNoul("refund", "Refund requested?").Build();
+Check(objectState.State["body"]!.GetValue<string>() == "from object", "serializable object state");
+var stringState = new SystemOneRequestBuilder().WithState("ticket")
+    .AddNoul("refund", "Refund requested?").Build();
+Check(stringState.State.GetValue<string>() == "ticket", "string state");
+Check(((NoulQuestion)stringState.Questions["refund"]).Criteria is null, "fluent noul criteria optional");
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState(42)
+    .AddNoul("refund", "Refund requested?").Build());
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState("ticket")
+    .AddChoice("team", "Route?", choice => choice.Option("billing", "refunds")).Build());
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState("ticket")
+    .AddNoul("refund", "Refund requested?").AddNoul("refund", "Again?"));
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState("ticket")
+    .AddChoice("team", "Route?", choice => choice.Option("billing", "refunds").Option("billing", "again")));
 
 var localHandler = new StubHandler((message, _) =>
 {
@@ -114,6 +183,13 @@ static void Check(bool condition, string name)
 {
     if (!condition) throw new Exception($"Verification failed: {name}");
     Console.WriteLine($"PASS {name}");
+}
+
+static void CheckThrows<T>(Action action) where T : Exception
+{
+    try { action(); }
+    catch (T) { Console.WriteLine($"PASS throws {typeof(T).Name}"); return; }
+    throw new Exception($"Expected {typeof(T).Name}.");
 }
 
 static async Task<T> Throws<T>(Func<Task> action) where T : Exception
