@@ -68,6 +68,18 @@ public sealed class SystemOneResponse
 
     [JsonPropertyName("usage")]
     public TokenUsage Usage { get; init; } = null!;
+
+    public ChoiceAnswer GetChoice(string id) => GetAnswer<ChoiceAnswer>(id);
+    public ScoreAnswer GetScore(string id) => GetAnswer<ScoreAnswer>(id);
+    public NoulAnswer GetNoul(string id) => GetAnswer<NoulAnswer>(id);
+
+    private T GetAnswer<T>(string id) where T : SystemOneAnswer
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(id);
+        if (!Answers.TryGetValue(id, out var answer))
+            throw new KeyNotFoundException($"Answer '{id}' was not returned.");
+        return answer as T ?? throw new InvalidOperationException($"Answer '{id}' is not a {typeof(T).Name}.");
+    }
 }
 
 public sealed class TokenUsage
