@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/SystemOneSharp.Example/SystemOneSharp.Example.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/SystemOneSharp/SystemOneSharp.csproj" />
   </Folder>

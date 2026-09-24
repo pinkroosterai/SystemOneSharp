@@ -35,3 +35,13 @@ var refundProbability = ((NoulAnswer)response.Answers["refund"]).Noul;
 For local Laya, set `BaseUri = new Uri("http://127.0.0.1:8000")` and omit `ApiKey` unless the server requires one. Set `Model` to a Laya checkpoint name to override its automatic routing. The caller owns the `HttpClient` and decides how to use probabilities and confidence.
 
 Run verification with `dotnet run --project tests/SystemOneSharp.Verification -c Release`. The harness uses an in-memory HTTP handler, so it needs no API key or local server.
+
+## Console example
+
+Start a local Laya server on `http://127.0.0.1:8000`, then run:
+
+```powershell
+dotnet run --project examples/SystemOneSharp.Example -c Release
+```
+
+The example sends one support ticket with Choice, Score, and Noul questions. It prints the selected team, score rubric, answer probabilities, confidence where available, model, and token usage. Change `examples/SystemOneSharp.Example/appsettings.json` to use another endpoint. For hosted Jev, set `BaseUri` to `https://api.typesafe.ai/`, `Model` to `jev-latest`, and `ApiKeyEnvironmentVariable` to `TYPESAFE_API_KEY`; set that environment variable outside the JSON file before running.
