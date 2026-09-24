@@ -1,10 +1,18 @@
 # SystemOneSharp
 
+[![CI](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/vpre/SystemOneSharp.svg)](https://www.nuget.org/packages/SystemOneSharp)
+
 A .NET 10 HTTP client for TypeSafe Jev and the Jev-compatible local Laya server. It sends a shared `POST /v1/systemone` request and returns typed Choice, Score, and Noul answers. The library has no runtime package dependencies.
+
+This is an unofficial, community-maintained client. It is not affiliated with or endorsed by TypeSafe or the Laya project.
 
 ## Install and requirements
 
-The first package is prepared as `SystemOneSharp` for .NET 10, but has not been published to NuGet. For now, clone the repository and add a project reference to `src/SystemOneSharp/SystemOneSharp.csproj`. After publication, install the package with `dotnet add package SystemOneSharp --prerelease`.
+Install the package from [NuGet](https://www.nuget.org/packages/SystemOneSharp) for .NET 10:
+
+```text
+dotnet add package SystemOneSharp --prerelease
+```
 
 The client needs an endpoint compatible with the System One API. Hosted Jev requires a key; the local Laya server requires a key only if configured to do so. Keep keys in environment variables.
 
