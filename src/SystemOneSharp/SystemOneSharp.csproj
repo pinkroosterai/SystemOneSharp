@@ -4,6 +4,26 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>SystemOneSharp</PackageId>
+    <Version>0.1.0-preview.1</Version>
+    <Authors>Jan Versteeg</Authors>
+    <Description>A .NET client for the System One API used by TypeSafe Jev and compatible Laya servers.</Description>
+    <PackageTags>SystemOne;Jev;Laya;HTTP;client</PackageTags>
+    <PackageProjectUrl>https://github.com/pinkroosterai/SystemOneSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/pinkroosterai/SystemOneSharp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="/" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.401" PrivateAssets="all" />
+  </ItemGroup>
 
 </Project>

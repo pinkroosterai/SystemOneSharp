@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace SystemOneSharp;
 
+/// <summary>Calls a hosted Jev or compatible Laya System One endpoint.</summary>
 public sealed class SystemOneClient : ISystemOneClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -15,6 +16,7 @@ public sealed class SystemOneClient : ISystemOneClient
     private readonly SystemOneOptions _options;
     private readonly Uri _endpoint;
 
+    /// <summary>Creates a client using a caller-owned <see cref="HttpClient"/>.</summary>
     public SystemOneClient(HttpClient httpClient, SystemOneOptions options)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
@@ -33,6 +35,7 @@ public sealed class SystemOneClient : ISystemOneClient
         _endpoint = new Uri(baseUri, "v1/systemone");
     }
 
+    /// <summary>Sends a request and returns typed answers, honoring cancellation and configured retries.</summary>
     public async Task<SystemOneResponse> DecideAsync(SystemOneRequest request, CancellationToken cancellationToken = default)
     {
         SystemOneRequestValidator.Validate(request);
