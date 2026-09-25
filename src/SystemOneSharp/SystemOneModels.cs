@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
@@ -7,6 +8,8 @@ public sealed class SystemOneRequest
 {
     public JsonNode State { get; init; } = null!;
     public IReadOnlyDictionary<string, SystemOneQuestion> Questions { get; init; } = null!;
+    /// <summary>Gets the model ID for this request, or <see langword="null"/> to use <see cref="SystemOneOptions.Model"/>.</summary>
+    public string? Model { get; init; }
 }
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
@@ -68,6 +71,10 @@ public sealed class SystemOneResponse
 
     [JsonPropertyName("usage")]
     public TokenUsage Usage { get; init; } = null!;
+
+    /// <summary>Gets response fields outside the System One contract, such as Laya's <c>routing</c>. They are preserved but not validated.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? AdditionalProperties { get; init; }
 
     public ChoiceAnswer GetChoice(string id) => GetAnswer<ChoiceAnswer>(id);
     public ScoreAnswer GetScore(string id) => GetAnswer<ScoreAnswer>(id);

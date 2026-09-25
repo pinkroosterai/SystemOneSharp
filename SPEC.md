@@ -6,7 +6,7 @@ Build a `net10.0` C# class library that calls the shared Jev/Laya System One HTT
 
 ## Wire contract
 
-`POST /v1/systemone` with `Content-Type: application/json`. Hosted Jev uses `https://api.typesafe.ai/` and `Authorization: Bearer <key>`. Laya's `laya-serve` accepts the same route on a configured local base URL and only needs the bearer header when its `LAYA_API_KEY` is set. Use the configured base URL plus the fixed relative route, regardless of provider. The request JSON contains required `state` (string, object, or array), `model` (default `jev-latest`), and a nonempty `questions` object keyed by caller question ID. Laya ignores a Jev model ID and routes automatically; a recognized Laya checkpoint ID can be set explicitly.
+`POST /v1/systemone` with `Content-Type: application/json`. Hosted Jev uses `https://api.typesafe.ai/` and `Authorization: Bearer <key>`. Laya's `laya-serve` accepts the same route on a configured local base URL and only needs the bearer header when its `LAYA_API_KEY` is set. Use the configured base URL plus the fixed relative route, regardless of provider. The request JSON contains required `state` (string, object, or array), `model` (default `jev-latest`; a request may override the client's configured model), and a nonempty `questions` object keyed by caller question ID. Laya ignores a Jev model ID and routes automatically; a recognized Laya checkpoint ID can be set explicitly.
 
 | Question | Request fields | Answer fields |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ Build a `net10.0` C# class library that calls the shared Jev/Laya System One HTT
 | Score | `type: "score"`, `instructions`, ordered `criteria` array with 2–10 JSON descriptions | `type`, fractional zero-based `score`, `legend` map, `probabilities` map, `confidence` |
 | Noul | `type: "noul"`, `instructions`, optional `criteria` object keyed `true` and `false` | `type`, `noul` probability; no separate confidence |
 
-`instructions` and non-null descriptions may be JSON string, object, or array. A response contains `model`, an `answers` map under the same question IDs, and `usage` with `input_tokens` and `output_tokens`. Ignore additional response fields such as Laya's `routing`. Validate the known answer type and required fields; preserve returned numeric values rather than calculating a second decision. Do not silently substitute missing answers.
+`instructions` and non-null descriptions may be JSON string, object, or array. A response contains `model`, an `answers` map under the same question IDs, and `usage` with `input_tokens` and `output_tokens`. Preserve additional response fields such as Laya's `routing` without validating them; they are not part of the contract. Validate the known answer type and required fields; preserve returned numeric values rather than calculating a second decision. Do not silently substitute missing answers.
 
 Sources: [TypeSafe API reference](https://docs.typesafe.ai/api), [TypeSafe quick start](https://docs.typesafe.ai/introduction/quickstart), [Laya HTTP server](https://github.com/NandhaKishorM/laya/blob/main/laya/serve.py).
 

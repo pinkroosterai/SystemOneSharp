@@ -10,6 +10,8 @@ internal static class SystemOneRequestValidator
         ArgumentNullException.ThrowIfNull(request);
         if (request.State is null || !IsStructuredOrString(request.State))
             throw new ArgumentException("State must be a JSON string, object, or array.", nameof(request));
+        if (request.Model is not null && string.IsNullOrWhiteSpace(request.Model))
+            throw new ArgumentException("Model must be null or a nonblank model ID.", nameof(request));
         if (request.Questions is null || request.Questions.Count == 0)
             throw new ArgumentException("At least one question is required.", nameof(request));
 

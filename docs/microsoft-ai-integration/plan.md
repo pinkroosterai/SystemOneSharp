@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — phase 1 in progress
+**Status** — phase 2 in progress
 **Research** — `research.md`
 
 ## Context
@@ -44,29 +44,30 @@ with the README included.
 
 ## Phase 2 — Core additions and diagnostics
 
-**Status** — not started
+**Status** — done
 **Rests on** — Phase 1 done; `SystemOneClient.DecideAsync` still builds the payload in one place
 (`src/SystemOneSharp/SystemOneClient.cs`); `ISystemOneClient` still has its single method.
 **Settle first** — Tag and span names for the `ActivitySource`, and whether they follow the
 OpenTelemetry GenAI semantic conventions; answer goes in `research.md § Core diagnostics`.
 **Tasks**
-- [ ] Add an optional per-request model that overrides `SystemOneOptions.Model`, settable from
+- [x] Add an optional per-request model that overrides `SystemOneOptions.Model`, settable from
       the builder, with `ISystemOneClient` unchanged — design §2; request model in
       `SystemOneModels.cs`, builder in `SystemOneRequestBuilder.cs`, validation rules in
       `SystemOneRequestValidator.cs`.
-- [ ] Add the `JsonElement` and `JsonTypeInfo<T>` state overloads, keeping deep-clone and
+- [x] Add the `JsonElement` and `JsonTypeInfo<T>` state overloads, keeping deep-clone and
       validation behaviour of the existing overloads — design §3; `SystemOneRequestBuilder.cs`.
-- [ ] Capture unknown response fields on `SystemOneResponse` without adding them to validation —
+- [x] Capture unknown response fields on `SystemOneResponse` without adding them to validation —
       design §4; `SystemOneModels.cs`, response validation in `SystemOneClient.cs`.
-- [ ] Update `SPEC.md` so the contract says extra response fields are preserved but not
+- [x] Update `SPEC.md` so the contract says extra response fields are preserved but not
       validated — the current wording at `SPEC.md:17` says "ignore".
-- [ ] Instrument `DecideAsync` with an `ActivitySource` recording only the non-sensitive fields
+- [x] Instrument `DecideAsync` with an `ActivitySource` recording only the non-sensitive fields
       in design §5, including retry count and success/failure — retry loop in `SystemOneClient.cs`.
-- [ ] Add harness checks for: model override on the wire, default model when unset, both new
+- [x] Add harness checks for: model override on the wire, default model when unset, both new
       state overloads, `routing` preserved on the response, activity tags present and no state or
       key in them — `tests/SystemOneSharp.Verification/Program.cs` (its canned body already has
       `routing`).
-- [ ] Document the new API in `README.md` and `REFERENCE_GUIDE.md`, and add a `CHANGELOG.md` entry.
+- [x] Document the new API in `README.md` and add a `CHANGELOG.md` entry. (`REFERENCE_GUIDE.md` is about
+      token limits and instruction writing, not the client API, so it was left alone.)
 **Done when** — Release build warning-free; verification harness passes with the new checks
 listed in its output; `SystemOneSharp.csproj` still references no Microsoft AI package.
 
@@ -186,3 +187,14 @@ both harnesses. The CI run itself is checked on the next push.
   warnings, 47 PASS + "All SystemOneSharp verification checks passed.", solution pack yields only
   `SystemOneSharp.0.1.0-preview.1.nupkg`/`.snupkg`, nuspec and file list identical to a pre-change
   pack except the commit hash.
+- 2026-09-25, phase 2 — Added `SystemOneRequest.Model` + `WithModel` (validator rejects a blank
+  model), `WithState(JsonElement)`, `WithState<T>(T, JsonTypeInfo<T>)`,
+  `SystemOneResponse.AdditionalProperties` (`[JsonExtensionData]`), and `SystemOneDiagnostics` with
+  an `ActivitySource` around `DecideAsync` (names per `research.md § Core diagnostics`; validation
+  errors throw before a span starts). `SPEC.md` now says extra fields are preserved and a request
+  may override the model. Correction: the docs task named `REFERENCE_GUIDE.md`, which does not cover
+  the client API; only `README.md` and `CHANGELOG.md` changed. Done when: build 0 warnings; harness
+  64 PASS + "All SystemOneSharp verification checks passed." (new: model override/default/blank,
+  JsonElement and JsonTypeInfo state, `routing` preserved, span name/kind/tags/status, retry count,
+  API and transport failure `error.type`, no state/instructions/key in tags); core `.csproj` has no
+  package references.

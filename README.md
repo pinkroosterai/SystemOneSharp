@@ -45,11 +45,13 @@ var urgency = response.GetScore("urgency");
 var refundProbability = response.GetNoul("refund").Noul;
 ```
 
-For local Laya, set `BaseUri = new Uri("http://127.0.0.1:8000")` and omit `ApiKey` unless the server requires one. Set `Model` to a Laya checkpoint name to override its automatic routing. The caller owns the `HttpClient` and decides how to use probabilities and confidence.
+For local Laya, set `BaseUri = new Uri("http://127.0.0.1:8000")` and omit `ApiKey` unless the server requires one. Set `Model` to a Laya checkpoint name to override its automatic routing, or call `WithModel(...)` on the builder to override the configured model for one request. The caller owns the `HttpClient` and decides how to use probabilities and confidence.
 
-`WithState` also accepts a `JsonNode` or a serializable C# object. For structured question instructions or criteria, use the `JsonNode` instruction overloads and `OptionJson`, `LevelJson`, or `CriteriaJson`. `Build()` checks the same request rules as `DecideAsync` and returns a separate snapshot each time. You can still construct `SystemOneRequest` and question objects directly. The typed answer methods throw for a missing ID or a mismatched answer type.
+`WithState` also accepts a `JsonNode`, a `JsonElement`, or a serializable C# object; pass a `JsonTypeInfo<T>` from a `JsonSerializerContext` to serialize without reflection. For structured question instructions or criteria, use the `JsonNode` instruction overloads and `OptionJson`, `LevelJson`, or `CriteriaJson`. `Build()` checks the same request rules as `DecideAsync` and returns a separate snapshot each time. You can still construct `SystemOneRequest` and question objects directly. The typed answer methods throw for a missing ID or a mismatched answer type.
 
-`SystemOneOptions` also controls `MaxRetries` and `InitialRetryDelay`. The client retries HTTP 429 and 529, honors `Retry-After`, and otherwise returns typed transport, API, or protocol exceptions. The caller's cancellation token stops the request or retry delay. See [SPEC.md](https://github.com/pinkroosterai/SystemOneSharp/blob/master/SPEC.md) for the full contract.
+`SystemOneOptions` also controls `MaxRetries` and `InitialRetryDelay`. The client retries HTTP 429 and 529, honors `Retry-After`, and otherwise returns typed transport, API, or protocol exceptions. The caller's cancellation token stops the request or retry delay. Response fields outside the contract, such as Laya's `routing`, are kept in `SystemOneResponse.AdditionalProperties` without validation. See [SPEC.md](https://github.com/pinkroosterai/SystemOneSharp/blob/master/SPEC.md) for the full contract.
+
+Each `DecideAsync` call is traced through an `ActivitySource` named `SystemOneDiagnostics.ActivitySourceName` (`"SystemOneSharp"`), using OpenTelemetry GenAI attribute names where they apply: model, question counts per type, retry count, token usage, and outcome. State, instructions, criteria, answers, and the API key are never recorded.
 
 ## Build and verify
 

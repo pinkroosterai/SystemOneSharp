@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -39,63 +41,120 @@ public sealed class SystemOneClient : ISystemOneClient
     public async Task<SystemOneResponse> DecideAsync(SystemOneRequest request, CancellationToken cancellationToken = default)
     {
         SystemOneRequestValidator.Validate(request);
+        var model = request.Model ?? _options.Model;
         var payload = JsonSerializer.SerializeToUtf8Bytes(new
         {
             state = request.State,
-            model = _options.Model,
+            model,
             questions = request.Questions
         }, JsonOptions);
 
-        for (var attempt = 1; ; attempt++)
+        using var activity = StartActivity(request, model);
+        var attempt = 0;
+        try
         {
-            using var message = new HttpRequestMessage(HttpMethod.Post, _endpoint)
+            for (attempt = 1; ; attempt++)
             {
-                Content = new ByteArrayContent(payload)
-            };
-            message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            if (!string.IsNullOrEmpty(_options.ApiKey))
-                message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
-
-            HttpResponseMessage response;
-            try
-            {
-                response = await _httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                throw new SystemOneTransportException("System One request timed out.", new TimeoutException("HTTP request timed out."));
-            }
-            catch (HttpRequestException ex)
-            {
-                throw new SystemOneTransportException("System One request failed during transport.", ex);
-            }
-
-            using (response)
-            {
-                if (response.StatusCode is (HttpStatusCode)429 or (HttpStatusCode)529 && attempt <= _options.MaxRetries)
+                using var message = new HttpRequestMessage(HttpMethod.Post, _endpoint)
                 {
-                    var delay = RetryDelay(response.Headers.RetryAfter, attempt);
-                    await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
-                    continue;
-                }
+                    Content = new ByteArrayContent(payload)
+                };
+                message.Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                if (!string.IsNullOrEmpty(_options.ApiKey))
+                    message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ApiKey);
 
-                var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-                if (!response.IsSuccessStatusCode)
-                    throw new SystemOneApiException(response.StatusCode, Sanitize(body), attempt);
-
+                HttpResponseMessage response;
                 try
                 {
-                    using var document = JsonDocument.Parse(body);
-                    ValidateResponse(document.RootElement, request);
-                    return JsonSerializer.Deserialize<SystemOneResponse>(body, JsonOptions)
-                        ?? throw new SystemOneProtocolException("System One returned an empty response.");
+                    response = await _httpClient.SendAsync(message, cancellationToken).ConfigureAwait(false);
                 }
-                catch (JsonException ex)
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
-                    throw new SystemOneProtocolException("System One returned invalid JSON or an unsupported answer type.", ex);
+                    throw new SystemOneTransportException("System One request timed out.", new TimeoutException("HTTP request timed out."));
+                }
+                catch (HttpRequestException ex)
+                {
+                    throw new SystemOneTransportException("System One request failed during transport.", ex);
+                }
+
+                using (response)
+                {
+                    if (response.StatusCode is (HttpStatusCode)429 or (HttpStatusCode)529 && attempt <= _options.MaxRetries)
+                    {
+                        var delay = RetryDelay(response.Headers.RetryAfter, attempt);
+                        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+                        continue;
+                    }
+
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+                    if (!response.IsSuccessStatusCode)
+                        throw new SystemOneApiException(response.StatusCode, Sanitize(body), attempt);
+
+                    SystemOneResponse result;
+                    try
+                    {
+                        using var document = JsonDocument.Parse(body);
+                        ValidateResponse(document.RootElement, request);
+                        result = JsonSerializer.Deserialize<SystemOneResponse>(body, JsonOptions)
+                            ?? throw new SystemOneProtocolException("System One returned an empty response.");
+                    }
+                    catch (JsonException ex)
+                    {
+                        throw new SystemOneProtocolException("System One returned invalid JSON or an unsupported answer type.", ex);
+                    }
+
+                    RecordSuccess(activity, result);
+                    return result;
                 }
             }
         }
+        catch (Exception ex) when (RecordFailure(activity, ex))
+        {
+            throw; // Unreachable: RecordFailure always returns false so the exception propagates untouched.
+        }
+        finally
+        {
+            activity?.SetTag(SystemOneDiagnostics.RetryCountTag, Math.Max(attempt - 1, 0));
+        }
+    }
+
+    private static Activity? StartActivity(SystemOneRequest request, string model)
+    {
+        var activity = SystemOneDiagnostics.Source.StartActivity($"{SystemOneDiagnostics.OperationName} {model}", ActivityKind.Client);
+        if (activity is null)
+            return null;
+
+        activity.SetTag(SystemOneDiagnostics.OperationNameTag, SystemOneDiagnostics.OperationName);
+        activity.SetTag(SystemOneDiagnostics.ProviderNameTag, SystemOneDiagnostics.ProviderName);
+        activity.SetTag(SystemOneDiagnostics.RequestModelTag, model);
+        activity.SetTag(SystemOneDiagnostics.QuestionCountTag, request.Questions.Count);
+        activity.SetTag(SystemOneDiagnostics.ChoiceCountTag, request.Questions.Values.Count(question => question is ChoiceQuestion));
+        activity.SetTag(SystemOneDiagnostics.ScoreCountTag, request.Questions.Values.Count(question => question is ScoreQuestion));
+        activity.SetTag(SystemOneDiagnostics.NoulCountTag, request.Questions.Values.Count(question => question is NoulQuestion));
+        return activity;
+    }
+
+    private static void RecordSuccess(Activity? activity, SystemOneResponse response)
+    {
+        if (activity is null)
+            return;
+
+        activity.SetTag(SystemOneDiagnostics.ResponseModelTag, response.Model);
+        activity.SetTag(SystemOneDiagnostics.InputTokensTag, response.Usage.InputTokens);
+        activity.SetTag(SystemOneDiagnostics.OutputTokensTag, response.Usage.OutputTokens);
+        activity.SetStatus(ActivityStatusCode.Ok);
+    }
+
+    private static bool RecordFailure(Activity? activity, Exception exception)
+    {
+        if (activity is not null)
+        {
+            activity.SetTag(SystemOneDiagnostics.ErrorTypeTag, exception is SystemOneApiException api
+                ? ((int)api.StatusCode).ToString(CultureInfo.InvariantCulture)
+                : exception.GetType().FullName);
+            activity.SetStatus(ActivityStatusCode.Error, exception.Message);
+        }
+        return false;
     }
 
     private TimeSpan RetryDelay(RetryConditionHeaderValue? retryAfter, int attempt)

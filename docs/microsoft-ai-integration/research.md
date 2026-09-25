@@ -168,3 +168,24 @@ it, but the packed nuspec's `<repository>` element lost its `branch` and `commit
 plain `PackageReference ... PrivateAssets="all"` (version central) restores them. Cause not
 investigated further; observed in this repo on the .NET 10 SDK, 2026-09-25.
 
+## Execution, phase 2 — 2026-09-25
+
+### Core diagnostics
+
+The OpenTelemetry GenAI span conventions (status: Development) moved to
+`open-telemetry/semantic-conventions-genai`. They set span kind `CLIENT`, span name
+`{gen_ai.operation.name} {gen_ai.request.model}`, require `gen_ai.operation.name` and
+`gen_ai.provider.name`, and recommend `gen_ai.request.model`, `gen_ai.response.model`,
+`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, plus `error.type` on failure. When no
+predefined operation applies, a system-specific name is allowed.
+
+Decision: follow those names for everything they cover. `gen_ai.operation.name` = `decide` (no
+predefined value fits a classification call); `gen_ai.provider.name` = `systemone` (the client
+cannot tell Jev from Laya, and both speak the System One protocol). Question counts and retries use
+a `systemone.` prefix. Duration is the span's own; success/failure is span status plus `error.type`
+(HTTP status code for API errors, exception type name otherwise). The source name is exposed as a
+public constant so callers can subscribe. Because the conventions are Development-status, the
+attribute names may change upstream — this is recorded next to the constants in code.
+
+Source: [gen-ai-spans.md](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-spans.md), checked 2026-09-25.
+

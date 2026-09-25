@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace SystemOneSharp;
 
@@ -7,6 +8,7 @@ namespace SystemOneSharp;
 public sealed class SystemOneRequestBuilder
 {
     private JsonNode? _state;
+    private string? _model;
     private readonly Dictionary<string, SystemOneQuestion> _questions = new();
 
     /// <summary>Sets a plain-text state.</summary>
@@ -25,11 +27,37 @@ public sealed class SystemOneRequestBuilder
         return this;
     }
 
+    /// <summary>Sets a structured JSON state using a copy of the supplied element.</summary>
+    public SystemOneRequestBuilder WithState(JsonElement state)
+    {
+        if (state.ValueKind == JsonValueKind.Undefined)
+            throw new ArgumentException("State element has no value.", nameof(state));
+        _state = JsonNode.Parse(state.GetRawText());
+        return this;
+    }
+
     /// <summary>Serializes an object as the state.</summary>
     public SystemOneRequestBuilder WithState<T>(T state)
     {
         ArgumentNullException.ThrowIfNull(state);
         _state = JsonSerializer.SerializeToNode(state);
+        return this;
+    }
+
+    /// <summary>Serializes an object as the state using source-generated metadata, without reflection.</summary>
+    public SystemOneRequestBuilder WithState<T>(T state, JsonTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        _state = JsonSerializer.SerializeToNode(state, typeInfo);
+        return this;
+    }
+
+    /// <summary>Overrides <see cref="SystemOneOptions.Model"/> for this request.</summary>
+    public SystemOneRequestBuilder WithModel(string model)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(model);
+        _model = model;
         return this;
     }
 
@@ -110,7 +138,8 @@ public sealed class SystemOneRequestBuilder
         var request = new SystemOneRequest
         {
             State = _state?.DeepClone()!,
-            Questions = _questions.ToDictionary(pair => pair.Key, pair => CloneQuestion(pair.Value))
+            Questions = _questions.ToDictionary(pair => pair.Key, pair => CloneQuestion(pair.Value)),
+            Model = _model
         };
         SystemOneRequestValidator.Validate(request);
         return request;

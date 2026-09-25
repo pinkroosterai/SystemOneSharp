@@ -1,8 +1,19 @@
+﻿using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using SystemOneSharp;
+
+var activities = new List<Activity>();
+using var listener = new ActivityListener
+{
+    ShouldListenTo = source => source.Name == SystemOneDiagnostics.ActivitySourceName,
+    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+    ActivityStopped = activities.Add
+};
+ActivitySource.AddActivityListener(listener);
 
 const string success = """
     {"model":"jev-1.13.0","answers":{
@@ -53,7 +64,43 @@ using (var http = new HttpClient(mixedHandler))
     CheckThrows<KeyNotFoundException>(() => result.GetChoice("absent"));
     CheckThrows<InvalidOperationException>(() => result.GetScore("department"));
     Check(result.Usage.InputTokens == 42 && mixedHandler.Calls == 1, "usage and call count");
+    Check(result.AdditionalProperties?["routing"].GetProperty("model").GetString() == "english", "extra response field preserved");
+    Check(request.Model is null, "request model defaults to null");
 }
+
+var span = activities.Single();
+Check(span.DisplayName == "decide jev-latest" && span.Kind == ActivityKind.Client, "activity name and kind");
+Check((string?)span.GetTagItem("gen_ai.operation.name") == "decide" &&
+    (string?)span.GetTagItem("gen_ai.provider.name") == "systemone" &&
+    (string?)span.GetTagItem("gen_ai.request.model") == "jev-latest", "activity request tags");
+Check((int?)span.GetTagItem("systemone.question.count") == 3 &&
+    (int?)span.GetTagItem("systemone.question.choice.count") == 1 &&
+    (int?)span.GetTagItem("systemone.question.score.count") == 1 &&
+    (int?)span.GetTagItem("systemone.question.noul.count") == 1, "activity question counts");
+Check((string?)span.GetTagItem("gen_ai.response.model") == "jev-1.13.0" &&
+    (int?)span.GetTagItem("gen_ai.usage.input_tokens") == 42 &&
+    (int?)span.GetTagItem("gen_ai.usage.output_tokens") == 12 &&
+    (int?)span.GetTagItem("systemone.retry.count") == 0 &&
+    span.Status == ActivityStatusCode.Ok, "activity response tags and status");
+Check(span.TagObjects.All(tag => tag.Value?.ToString() is not { } value ||
+    !value.Contains("Refund", StringComparison.OrdinalIgnoreCase) && !value.Contains("test-key", StringComparison.Ordinal) &&
+    !value.Contains("Which team", StringComparison.Ordinal)), "activity records no state, instructions, or key");
+
+var overrideHandler = new StubHandler(async (message, _) =>
+{
+    using var body = JsonDocument.Parse(await message.Content!.ReadAsStringAsync());
+    Check(body.RootElement.GetProperty("model").GetString() == "laya-en", "request model overrides options");
+    return JsonResponse(HttpStatusCode.OK, success);
+});
+activities.Clear();
+using (var http = new HttpClient(overrideHandler))
+    await new SystemOneClient(http, new SystemOneOptions()).DecideAsync(new SystemOneRequestBuilder()
+        .WithState("ticket").WithModel("laya-en").AddNoul("refund", "Refund requested?").Build());
+Check((string?)activities.Single().GetTagItem("gen_ai.request.model") == "laya-en", "activity records overridden model");
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithModel(" "));
+using (var http = new HttpClient(overrideHandler))
+    await Throws<ArgumentException>(() => new SystemOneClient(http, new SystemOneOptions())
+        .DecideAsync(new SystemOneRequest { State = request.State, Questions = request.Questions, Model = " " }));
 
 var stateNode = JsonNode.Parse("""{"body":"Refund needed"}""")!;
 var instructionNode = JsonNode.Parse("""{"task":"route ticket"}""")!;
@@ -109,6 +156,15 @@ Check(objectState.State["body"]!.GetValue<string>() == "from object", "serializa
 var stringState = new SystemOneRequestBuilder().WithState("ticket")
     .AddNoul("refund", "Refund requested?").Build();
 Check(stringState.State.GetValue<string>() == "ticket", "string state");
+SystemOneRequest elementState;
+using (var document = JsonDocument.Parse("""{"body":"from element"}"""))
+    elementState = new SystemOneRequestBuilder().WithState(document.RootElement)
+        .AddNoul("refund", "Refund requested?").Build();
+Check(elementState.State["body"]!.GetValue<string>() == "from element", "JsonElement state copied");
+CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState(default(JsonElement)));
+var typedState = new SystemOneRequestBuilder().WithState(new TicketState("from type info"), HarnessJsonContext.Default.TicketState)
+    .AddNoul("refund", "Refund requested?").Build();
+Check(typedState.State["Body"]!.GetValue<string>() == "from type info", "JsonTypeInfo state");
 Check(((NoulQuestion)stringState.Questions["refund"]).Criteria is null, "fluent noul criteria optional");
 CheckThrows<ArgumentException>(() => new SystemOneRequestBuilder().WithState(42)
     .AddNoul("refund", "Refund requested?").Build());
@@ -138,6 +194,7 @@ var retryHandler = new StubHandler((_, _) =>
 using (var http = new HttpClient(retryHandler))
     await new SystemOneClient(http, new SystemOneOptions { MaxRetries = 1, InitialRetryDelay = TimeSpan.Zero }).DecideAsync(request);
 Check(retryHandler.Calls == 2, "429 retry");
+Check((int?)activities.Last().GetTagItem("systemone.retry.count") == 1, "activity records retry count");
 
 var overloaded = new StubHandler((_, _) => Task.FromResult(JsonResponse((HttpStatusCode)529, """{"error":"busy"}""")));
 using (var http = new HttpClient(overloaded))
@@ -145,6 +202,8 @@ using (var http = new HttpClient(overloaded))
     var client = new SystemOneClient(http, new SystemOneOptions { MaxRetries = 1, InitialRetryDelay = TimeSpan.Zero });
     var error = await Throws<SystemOneApiException>(() => client.DecideAsync(request));
     Check(error.StatusCode == (HttpStatusCode)529 && error.Attempts == 2, "529 exhausted retry");
+    Check((string?)activities.Last().GetTagItem("error.type") == "529" &&
+        activities.Last().Status == ActivityStatusCode.Error, "activity records API failure");
 }
 
 var unauthorized = new StubHandler((_, _) => Task.FromResult(JsonResponse(HttpStatusCode.Unauthorized, """{"detail":"test-key invalid"}""")));
@@ -171,6 +230,8 @@ using (var http = new HttpClient(missing))
 var network = new StubHandler((_, _) => throw new HttpRequestException("connection refused"));
 using (var http = new HttpClient(network))
     await Throws<SystemOneTransportException>(() => new SystemOneClient(http, new SystemOneOptions()).DecideAsync(request));
+Check((string?)activities.Last().GetTagItem("error.type") == typeof(SystemOneTransportException).FullName,
+    "activity records transport failure");
 
 Console.WriteLine("All SystemOneSharp verification checks passed.");
 
@@ -210,3 +271,8 @@ internal sealed class StubHandler(Func<HttpRequestMessage, CancellationToken, Ta
         return respond(request, cancellationToken);
     }
 }
+
+internal sealed record TicketState(string Body);
+
+[JsonSerializable(typeof(TicketState))]
+internal sealed partial class HarnessJsonContext : JsonSerializerContext;
