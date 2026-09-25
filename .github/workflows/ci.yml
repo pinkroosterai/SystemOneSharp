@@ -28,5 +28,18 @@ jobs:
         run: dotnet build SystemOneSharp.slnx -c Release --no-restore
       - name: Verify client
         run: dotnet run --project tests/SystemOneSharp.Verification -c Release --no-build
-      - name: Pack library
-        run: dotnet pack src/SystemOneSharp/SystemOneSharp.csproj -c Release --no-build --no-restore
+      - name: Verify integrations
+        run: dotnet run --project tests/SystemOneSharp.Integrations.Verification -c Release --no-build
+      - name: Pack packages
+        run: dotnet pack SystemOneSharp.slnx -c Release --no-build --no-restore -o artifacts
+      - name: Check packages
+        shell: bash
+        run: |
+          version=$(dotnet msbuild src/SystemOneSharp/SystemOneSharp.csproj -getProperty:Version)
+          for id in SystemOneSharp SystemOneSharp.Extensions.AI SystemOneSharp.Extensions.AI.Evaluation SystemOneSharp.AgentFramework; do
+            for ext in nupkg snupkg; do
+              [ -f "artifacts/$id.$version.$ext" ] || { echo "Missing artifacts/$id.$version.$ext"; exit 1; }
+            done
+          done
+          count=$(ls artifacts/*.nupkg | wc -l)
+          [ "$count" -eq 4 ] || { echo "Expected 4 packages, found $count"; ls artifacts; exit 1; }

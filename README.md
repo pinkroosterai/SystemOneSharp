@@ -53,15 +53,28 @@ For local Laya, set `BaseUri = new Uri("http://127.0.0.1:8000")` and omit `ApiKe
 
 Each `DecideAsync` call is traced through an `ActivitySource` named `SystemOneDiagnostics.ActivitySourceName` (`"SystemOneSharp"`), using OpenTelemetry GenAI attribute names where they apply: model, question counts per type, retry count, token usage, and outcome. State, instructions, criteria, answers, and the API key are never recorded.
 
+## Microsoft AI integrations
+
+Three optional packages connect the client to Microsoft's AI stack. Each one calls `ISystemOneClient.DecideAsync`, so retries, validation and tracing come from the core package.
+
+| Package | What it adds |
+|---|---|
+| `SystemOneSharp.Extensions.AI` | One canonical projection of `ChatMessage` conversations into System One state. [Guide](https://github.com/pinkroosterai/SystemOneSharp/blob/master/docs/microsoft-extensions-ai.md) |
+| `SystemOneSharp.Extensions.AI.Evaluation` | `SystemOneEvaluator`: several MEAI evaluation metrics from one System One request. [Guide](https://github.com/pinkroosterai/SystemOneSharp/blob/master/docs/evaluation.md) |
+| `SystemOneSharp.AgentFramework` | A completion `LoopEvaluator` and function-calling middleware for Microsoft Agent Framework. [Guide](https://github.com/pinkroosterai/SystemOneSharp/blob/master/docs/agent-framework.md) |
+
+The core package does not depend on any of them.
+
 ## Build and verify
 
 ```text
 dotnet build SystemOneSharp.slnx -c Release
 dotnet run --project tests/SystemOneSharp.Verification -c Release
-dotnet pack src/SystemOneSharp/SystemOneSharp.csproj -c Release
+dotnet run --project tests/SystemOneSharp.Integrations.Verification -c Release
+dotnet pack SystemOneSharp.slnx -c Release
 ```
 
-The verification harness uses an in-memory HTTP handler, so it needs no API key or local server. The example below does make live calls.
+The core harness uses an in-memory HTTP handler and the integration harness uses a fake client, so neither needs an API key or a local server. The examples below do make live calls.
 
 ## Console example
 
@@ -72,6 +85,8 @@ dotnet run --project examples/SystemOneSharp.Example -c Release
 ```
 
 The example sends one combined request with Choice, Score, and Noul questions, then sends each question separately. It prints the selected team, score rubric, answer probabilities, confidence where available, model, token usage, each call's elapsed time, and total run time. Each run makes four API calls. The combined call runs first, so its time may include server warmup. Change `examples/SystemOneSharp.Example/appsettings.json` to use another endpoint. For hosted Jev, set `BaseUri` to `https://api.typesafe.ai/`, `Model` to `jev-latest`, and `ApiKeyEnvironmentVariable` to `TYPESAFE_API_KEY`; set that environment variable outside the JSON file before running.
+
+`examples/SystemOneSharp.MicrosoftAI.Example` uses the same `appsettings.json` settings. It projects a conversation, evaluates a response, runs the completion loop evaluator and the function-call gate, and routes tickets through a Microsoft Agent Framework workflow. Its chat model is a scripted stand-in, so only the System One calls are live.
 
 ## Contributing and security
 

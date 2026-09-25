@@ -1,5 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <PackageId>SystemOneSharp.AgentFramework</PackageId>
+    <Description>System One completion loop evaluator and function-call gating middleware for Microsoft Agent Framework.</Description>
+    <PackageTags>SystemOne;Jev;Laya;AgentFramework;agents</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\agent-framework.md" Pack="true" PackagePath="/README.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SystemOneSharp.Extensions.AI\SystemOneSharp.Extensions.AI.csproj" />
   </ItemGroup>

@@ -16,13 +16,25 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: 10.0.x
-      - name: Check tag matches project version
+      - name: Check tag matches repository version
         run: |
           version=$(dotnet msbuild src/SystemOneSharp/SystemOneSharp.csproj -getProperty:Version)
           [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME does not match version $version"; exit 1; }
       - run: dotnet build SystemOneSharp.slnx -c Release
       - run: dotnet run --project tests/SystemOneSharp.Verification -c Release --no-build
-      - run: dotnet pack src/SystemOneSharp/SystemOneSharp.csproj -c Release --no-build -o artifacts
+      - run: dotnet run --project tests/SystemOneSharp.Integrations.Verification -c Release --no-build
+      - run: dotnet pack SystemOneSharp.slnx -c Release --no-build -o artifacts
+      - name: Check packages
+        shell: bash
+        run: |
+          version=$(dotnet msbuild src/SystemOneSharp/SystemOneSharp.csproj -getProperty:Version)
+          for id in SystemOneSharp SystemOneSharp.Extensions.AI SystemOneSharp.Extensions.AI.Evaluation SystemOneSharp.AgentFramework; do
+            for ext in nupkg snupkg; do
+              [ -f "artifacts/$id.$version.$ext" ] || { echo "Missing artifacts/$id.$version.$ext"; exit 1; }
+            done
+          done
+          count=$(ls artifacts/*.nupkg | wc -l)
+          [ "$count" -eq 4 ] || { echo "Expected 4 packages, found $count"; ls artifacts; exit 1; }
       - name: Push to NuGet
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}

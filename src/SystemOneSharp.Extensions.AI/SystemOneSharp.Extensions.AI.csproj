@@ -1,5 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <PackageId>SystemOneSharp.Extensions.AI</PackageId>
+    <Description>Projects Microsoft.Extensions.AI conversations into System One state for SystemOneSharp.</Description>
+    <PackageTags>SystemOne;Jev;Laya;Microsoft.Extensions.AI;AI</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\microsoft-extensions-ai.md" Pack="true" PackagePath="/README.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SystemOneSharp\SystemOneSharp.csproj" />
   </ItemGroup>

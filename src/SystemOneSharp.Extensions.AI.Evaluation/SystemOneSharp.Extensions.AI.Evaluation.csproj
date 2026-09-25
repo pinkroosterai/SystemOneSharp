@@ -1,5 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <PackageId>SystemOneSharp.Extensions.AI.Evaluation</PackageId>
+    <Description>A Microsoft.Extensions.AI.Evaluation evaluator that turns one System One request into several metrics.</Description>
+    <PackageTags>SystemOne;Jev;Laya;Microsoft.Extensions.AI;evaluation</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\evaluation.md" Pack="true" PackagePath="/README.md" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SystemOneSharp.Extensions.AI\SystemOneSharp.Extensions.AI.csproj" />
   </ItemGroup>

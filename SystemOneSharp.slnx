@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/examples/">
     <Project Path="examples/SystemOneSharp.Example/SystemOneSharp.Example.csproj" />
+    <Project Path="examples/SystemOneSharp.MicrosoftAI.Example/SystemOneSharp.MicrosoftAI.Example.csproj" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/SystemOneSharp.AgentFramework/SystemOneSharp.AgentFramework.csproj" />

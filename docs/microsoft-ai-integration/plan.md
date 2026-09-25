@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — phase 5 in progress
+**Status** — done
 **Research** — `research.md`
 
 ## Context
@@ -152,26 +152,26 @@ exceptions propagate.
 
 ## Phase 6 — Example, docs, CI and release
 
-**Status** — not started
+**Status** — done
 **Rests on** — Phases 4 and 5 done.
 **Settle first**
 - The version number for the first multi-package release (`v0.1.0-preview.1` is taken); answer
   goes in `research.md § Release`.
 - Which MAF package the workflow demo needs; answer goes in `research.md § Package versions`.
 **Tasks**
-- [ ] Add `examples/SystemOneSharp.MicrosoftAI.Example` covering the five scenarios in design
+- [x] Add `examples/SystemOneSharp.MicrosoftAI.Example` covering the five scenarios in design
       §21, configured like the existing example (key via environment variable name in
       `appsettings.json`) — pattern in `examples/SystemOneSharp.Example/`.
-- [ ] Write `docs/microsoft-extensions-ai.md`, `docs/evaluation.md`, `docs/agent-framework.md`,
+- [x] Write `docs/microsoft-extensions-ai.md`, `docs/evaluation.md`, `docs/agent-framework.md`,
       and link them from `README.md` without growing `SPEC.md` — design §22.
-- [ ] Give each new package its own ID, description, tags and README — design §1; shared
+- [x] Give each new package its own ID, description, tags and README — design §1; shared
       settings already in `Directory.Build.props`.
-- [ ] Update CI to run both harnesses and pack every publishable project on both OSes, then
+- [x] Update CI to run both harnesses and pack every publishable project on both OSes, then
       check the produced packages — design §24; `.github/workflows/ci.yml`.
-- [ ] Update release to pack all four packages into one folder, push all `.nupkg`, attach all
+- [x] Update release to pack all four packages into one folder, push all `.nupkg`, attach all
       `.nupkg`/`.snupkg` — design §25; `.github/workflows/release.yml`.
-- [ ] Update `CLAUDE.md` commands and architecture for the new projects, and `CHANGELOG.md`.
-- [ ] Walk the design doc's "Definition of done" and record each line's evidence in the Log.
+- [x] Update `CLAUDE.md` commands and architecture for the new projects, and `CHANGELOG.md`.
+- [x] Walk the design doc's "Definition of done" and record each line's evidence in the Log.
 **Done when** — Release build warning-free; both harnesses pass; packing the solution locally
 yields four `.nupkg` at the same version; both workflow files reference all four packages and
 both harnesses. The CI run itself is checked on the next push.
@@ -240,3 +240,31 @@ both harnesses. The CI run itself is checked on the next push.
   threshold → Continue, above → Stop, LoopAgent runs twice for 0.2 then 0.99, allow → function runs,
   block → function not run and model sees the block result, cancellation and exceptions propagate);
   `SystemOneSharp.AgentFramework.csproj` does not reference the evaluation package.
+- 2026-09-25, phase 6 — Version set to `0.2.0-preview.1` (default, recorded in `research.md § Release`;
+  not user-confirmed). Added `examples/SystemOneSharp.MicrosoftAI.Example` (five scenarios; scripted
+  stand-in chat model, live System One calls) and ran it against the user's local Laya
+  (`laya-rl-agent`): exit 0, all five sections produced output. The first run exposed a workflow
+  bug in the example itself (void `ValueTask` executors declare no outputs, so `YieldOutputAsync`
+  failed silently as a `WorkflowErrorEvent`); fixed by returning the value, and the example now throws
+  on a `WorkflowErrorEvent` (`research.md § Workflow demo package and API`). Live numbers worth
+  knowing are in `research.md § Live run against local Laya`. Added `docs/microsoft-extensions-ai.md`,
+  `docs/evaluation.md`, `docs/agent-framework.md` (each also its package's NuGet README), README
+  section + links, package ID/description/tags per package, CI (both harnesses, solution pack to
+  `artifacts`, package check) and release (same, then push/attach all), `CLAUDE.md`, `CHANGELOG.md`.
+  Done when: build 0 warnings; both harnesses pass; `dotnet pack SystemOneSharp.slnx` produced the
+  four `.nupkg` + four `.snupkg` at `0.2.0-preview.1`, and the workflow's own package-check script
+  printed PACKAGES-OK locally; both workflow files reference both harnesses and all four packages.
+  The CI run itself is checked on the next push (nothing pushed).
+- 2026-09-25, design doc definition of done — core works alone: core `.csproj` has no package
+  references and its nuspec has no dependencies. All `net10.0`: every nupkg has only `lib/net10.0/`.
+  One version: all four at `0.2.0-preview.1` from `Directory.Build.props`. `ISystemOneClient`
+  unchanged since `v0.1.0-preview.1` (`git diff` empty). Model override: core harness "request model
+  overrides options". One projection: `FunctionCallContent|ChatMessage` in `src/` only in
+  `SystemOneAiState.cs`. Several metrics, one request: integration "several evaluator metrics → one
+  DecideAsync call". MAF LoopEvaluator and function classification: phase 5 checks plus the live
+  example. No HTTP/retry/parse/tracing in integrations: grep for `HttpClient|HttpRequestMessage|
+  JsonDocument|ActivitySource|Retry|ValidateResponse` in integration `src/` finds nothing, and the
+  only server calls are three `DecideAsync` calls. No executor/router types in `src/`. Core telemetry
+  covers every integration by construction, because all three call `DecideAsync`, which owns the
+  span. Deterministic tests need no credentials: both harnesses use fakes. CI on both OSes and
+  one-tag release: workflow files, not yet run.

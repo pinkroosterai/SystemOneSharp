@@ -256,3 +256,38 @@ Sources: [FunctionInvocationContext.cs](https://github.com/dotnet/extensions/blo
 `project.assets.json`), so that package reaches `SystemOneSharp.AgentFramework` transitively. That
 is not a reference to `SystemOneSharp.Extensions.AI.Evaluation`, so design §11 still holds.
 
+## Execution, phase 6 — 2026-09-25
+
+### Release
+
+`v0.1.0-preview.1` is published. Decision (default, not user-confirmed): the first multi-package
+release is `0.2.0-preview.1` — new public API in a 0.x preview is a minor bump, and it stays a
+prerelease because `SystemOneSharp.AgentFramework` builds on experimental MAF types. Changing it is
+one line in `Directory.Build.props`.
+
+### Workflow demo package and API
+
+The workflow demo needs `Microsoft.Agents.AI.Workflows` `1.22.0` (same version line as
+`Microsoft.Agents.AI`). Function executors come from `BindAsExecutor` overloads on `Func`/`Action`,
+including async ones (`Func<TIn, IWorkflowContext, CancellationToken, ValueTask<TOut>>`); conditional
+routing is `AddEdge<T>(source, target, condition)`; `WithOutputFrom(...)` marks output executors;
+`InProcessExecution.RunAsync(workflow, input)` returns a `Run` whose `OutgoingEvents` hold
+`WorkflowOutputEvent`s. Observed while running the example: an executor bound from a delegate that
+returns plain `ValueTask` declares no output types, so `context.YieldOutputAsync("...")` fails with
+"Cannot output object of type String. Expecting one of []" — surfaced only as a `WorkflowErrorEvent`,
+not an exception. Returning the value (`Func<TIn, TOut>`) declares the output type and works.
+
+Sources: [Edges](https://learn.microsoft.com/agent-framework/concepts/workflows/edges),
+[Executors](https://learn.microsoft.com/agent-framework/concepts/workflows/executors),
+[ExecutorBindingExtensions.cs](https://github.com/microsoft/agent-framework/blob/main/dotnet/src/Microsoft.Agents.AI.Workflows/ExecutorBindingExtensions.cs), checked 2026-09-25.
+
+### Live run against local Laya (`laya-rl-agent`)
+
+Observed 2026-09-25, not a benchmark: the completion Noul for a finished three-section report was
+0.727 (below the example's 0.9 threshold, so `MaxIterations` ended the loop); the function gate
+classified "delete every row in `customers`" in a production policy context as `routine` (0.687). The
+integration behaves as designed — both are model judgments the application policy then acts on —
+but they are worth knowing before choosing thresholds and category wording for a real deployment.
+Laya also returns fields outside the contract (`confidence`/`answer_confidence`/`action` on a Noul
+answer, top-level `routing`); the client accepts them.
+

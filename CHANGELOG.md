@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.2.0-preview.1
+
+New packages, all released at the same version as the core:
+
+- `SystemOneSharp.Extensions.AI`: one canonical projection of Microsoft.Extensions.AI conversations into System One state (`WithConversation`, `ToSystemOneState`).
+- `SystemOneSharp.Extensions.AI.Evaluation`: `SystemOneEvaluator`, several MEAI evaluation metrics from one System One request.
+- `SystemOneSharp.AgentFramework`: `SystemOneCompletionLoopEvaluator` for `LoopAgent` (experimental, `MAAI001`) and `SystemOneFunctionGate` function-calling middleware.
+
+Core:
 
 - Per-request model override: `SystemOneRequest.Model` and `SystemOneRequestBuilder.WithModel`.
 - `WithState(JsonElement)` and `WithState<T>(T, JsonTypeInfo<T>)` state overloads.
