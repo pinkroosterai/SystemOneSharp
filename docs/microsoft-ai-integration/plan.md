@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — phase 3 in progress
+**Status** — phase 4 in progress
 **Research** — `research.md`
 
 ## Context
@@ -101,22 +101,22 @@ package).
 
 ## Phase 4 — Evaluation package
 
-**Status** — not started
+**Status** — done
 **Rests on** — Phase 3 done; `IEvaluator.EvaluateAsync` still has the signature in
 `research.md § Microsoft.Extensions.AI.Evaluation`.
 **Settle first** — Whether evaluation metrics can carry confidence and probabilities as
 metadata or diagnostics; answer goes in `research.md § Microsoft.Extensions.AI.Evaluation`.
 **Tasks**
-- [ ] Create `src/SystemOneSharp.Extensions.AI.Evaluation` referencing core, Extensions.AI and
+- [x] Create `src/SystemOneSharp.Extensions.AI.Evaluation` referencing core, Extensions.AI and
       `Microsoft.Extensions.AI.Evaluation`, and nothing from MAF — design §8, §26.
-- [ ] Implement one configurable `SystemOneEvaluator` that sends all configured questions in one
+- [x] Implement one configurable `SystemOneEvaluator` that sends all configured questions in one
       request and maps each answer to a metric (Noul/Score numeric, Choice string) — design §8, §9.
-- [ ] Build state only through the phase 3 projection — design §8, §17.
-- [ ] Offer optional interpretation through MEAI's own interpretation type, never inside the
+- [x] Build state only through the phase 3 projection — design §8, §17.
+- [x] Offer optional interpretation through MEAI's own interpretation type, never inside the
       evaluator's inference path — design §10.
-- [ ] Decide and document what the evaluator does when `DecideAsync` throws, keeping the
+- [x] Decide and document what the evaluator does when `DecideAsync` throws, keeping the
       existing exception semantics — design §20 last scenario; exceptions in `src/SystemOneSharp/SystemOneExceptions.cs`.
-- [ ] Add the evaluation scenarios from design §20 (several metrics → one call, metric types,
+- [x] Add the evaluation scenarios from design §20 (several metrics → one call, metric types,
       cancellation propagated, exceptions preserved) to the integration harness.
 **Done when** — Release build warning-free; integration harness passes the listed scenarios,
 including a check that the fake client recorded exactly one call for a multi-metric evaluator.
@@ -210,3 +210,17 @@ both harnesses. The CI run itself is checked on the next push.
   warnings; core harness and integration harness both print their "All ... passed." line (10
   integration checks); grep for `FunctionCallContent|ChatMessage` in `src/` hits only
   `src/SystemOneSharp.Extensions.AI/SystemOneAiState.cs`.
+- 2026-09-25, phase 4 — Added `src/SystemOneSharp.Extensions.AI.Evaluation` (MEAI Evaluation
+  `10.10.0`): `SystemOneEvaluator(client, configureRequest, configureMetrics, stateOptions?)` and
+  `SystemOneMetricMap` (`Noul`/`Score` → `NumericMetric`, `Choice` → `StringMetric`, each with an
+  optional interpretation delegate for thresholds). State = conversation + response messages through
+  the phase 3 projection. Confidence and distributions go into metric `Metadata`
+  (`systemone-confidence`, `systemone-probabilities`) plus the built-in `eval-*` model/token/duration
+  keys (`research.md § Evaluation metric metadata`). Decision on failures: `DecideAsync` exceptions
+  propagate unchanged (a failed decision is never reported as a score); `ChatConfiguration` and
+  `additionalContext` are ignored and documented as such; a metric mapped to a missing or
+  wrong-type question throws `InvalidOperationException`. The design doc names a
+  `SystemOneEvaluatorOptions`; the only option needed was the projection options, so it is a
+  constructor parameter and no options class was added. Done when: build 0 warnings; both harnesses
+  pass (integration adds 15 evaluation checks, including "several evaluator metrics → one DecideAsync
+  call" with `client.Requests.Count == 1`); no `Microsoft.Agents` package in the evaluation assets.

@@ -207,3 +207,22 @@ Source: [AIJsonUtilities.DefaultOptions](https://learn.microsoft.com/dotnet/api/
 `10.10.0` and `Microsoft.Agents.AI` `1.22.0` are unchanged. Both still require MEAI `>= 10.10.0`,
 so `10.10.1` is compatible. Checked on the NuGet flat-container index, 2026-09-25.
 
+## Execution, phase 4 — 2026-09-25
+
+### Evaluation metric metadata
+
+Every `EvaluationMetric` has `Metadata` (`IDictionary<string, string>?`), `Diagnostics`,
+`Interpretation`, `Context` and `Reason`, with `AddOrUpdateMetadata` helpers. So Score/Choice
+confidence and probability distributions go into `Metadata` as invariant-culture strings (the
+distribution as a JSON object string) rather than as extra top-level metrics. Built-in evaluators
+record model, tokens and duration under `eval-model`, `eval-input-tokens`, `eval-output-tokens`,
+`eval-total-tokens`, `eval-duration-ms`; those names are `internal` constants in
+`BuiltInMetricUtilities`, so SystemOneEvaluator writes the same strings so reports show them
+alongside built-in metrics. `IEvaluator` is `EvaluationMetricNames` plus the one `EvaluateAsync`
+already recorded; `EvaluationRating` is Unknown/Inconclusive/Unacceptable/Poor/Average/Good/Exceptional.
+
+Sources: [EvaluationMetric.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/EvaluationMetric.cs),
+[EvaluationMetricExtensions.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/EvaluationMetricExtensions.cs),
+[BuiltInMetricUtilities.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/Utilities/BuiltInMetricUtilities.cs),
+[IEvaluator.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/IEvaluator.cs), checked 2026-09-25.
+

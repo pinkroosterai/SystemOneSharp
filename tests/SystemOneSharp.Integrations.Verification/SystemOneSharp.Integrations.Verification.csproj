@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\SystemOneSharp.Extensions.AI\SystemOneSharp.Extensions.AI.csproj" />
     <ProjectReference Include="..\SystemOneSharp.Testing\SystemOneSharp.Testing.csproj" />
+    <ProjectReference Include="..\..\src\SystemOneSharp.Extensions.AI.Evaluation\SystemOneSharp.Extensions.AI.Evaluation.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
