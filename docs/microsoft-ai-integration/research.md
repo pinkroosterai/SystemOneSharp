@@ -226,3 +226,33 @@ Sources: [EvaluationMetric.cs](https://github.com/dotnet/extensions/blob/main/sr
 [BuiltInMetricUtilities.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/Utilities/BuiltInMetricUtilities.cs),
 [IEvaluator.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Evaluation/IEvaluator.cs), checked 2026-09-25.
 
+## Execution, phase 5 — 2026-09-25
+
+### `[Experimental]` on `LoopEvaluator`
+
+`LoopEvaluator`, `LoopContext` and `LoopEvaluation` all raise `error MAAI001` when used (confirmed by
+building `SystemOneCompletionLoopEvaluator` without an attribute). Marking the derived class
+`[Experimental("MAAI001")]` compiles clean with no `NoWarn`, and hands consumers the same diagnostic
+ID they already suppress to use `LoopAgent`. Decision: reuse `MAAI001` instead of minting a
+SystemOneSharp ID. The integration harness suppresses `MAAI001` in its project file.
+
+### Arguments at the function-middleware point
+
+`FunctionInvocationContext` (in `Microsoft.Extensions.AI`, not Abstractions) exposes `Function`,
+`Arguments` (`AIFunctionArguments`), `CallContent`, `Messages`, `Terminate` and iteration counters.
+`Arguments` are the model's parsed arguments, possibly changed by earlier middleware; nothing in
+the source validates them against the function's schema before middleware runs. The gate therefore
+classifies the arguments it is about to invoke with (`context.Arguments`, not `CallContent.Arguments`)
+and documents them as unvalidated. MAF installs the middleware with
+`AIAgentBuilder.Use(Func<AIAgent, FunctionInvocationContext, Func<FunctionInvocationContext, CancellationToken, ValueTask<object?>>, CancellationToken, ValueTask<object?>>)`,
+which throws unless the inner agent exposes a `FunctionInvokingChatClient`.
+
+Sources: [FunctionInvocationContext.cs](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI/ChatCompletion/FunctionInvocationContext.cs),
+[FunctionInvocationDelegatingAgentBuilderExtensions.cs](https://github.com/microsoft/agent-framework/blob/main/dotnet/src/Microsoft.Agents.AI/FunctionInvocationDelegatingAgentBuilderExtensions.cs), checked 2026-09-25.
+
+### MAF's own dependency on MEAI Evaluation
+
+`Microsoft.Agents.AI` 1.22.0 depends on `Microsoft.Extensions.AI.Evaluation` directly (seen in
+`project.assets.json`), so that package reaches `SystemOneSharp.AgentFramework` transitively. That
+is not a reference to `SystemOneSharp.Extensions.AI.Evaluation`, so design §11 still holds.
+

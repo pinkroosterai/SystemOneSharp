@@ -4,11 +4,14 @@
     <ProjectReference Include="..\..\src\SystemOneSharp.Extensions.AI\SystemOneSharp.Extensions.AI.csproj" />
     <ProjectReference Include="..\SystemOneSharp.Testing\SystemOneSharp.Testing.csproj" />
     <ProjectReference Include="..\..\src\SystemOneSharp.Extensions.AI.Evaluation\SystemOneSharp.Extensions.AI.Evaluation.csproj" />
+    <ProjectReference Include="..\..\src\SystemOneSharp.AgentFramework\SystemOneSharp.AgentFramework.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
+    <!-- LoopAgent and LoopEvaluator are experimental in Agent Framework. -->
+    <NoWarn>$(NoWarn);MAAI001</NoWarn>
   </PropertyGroup>
 
 </Project>

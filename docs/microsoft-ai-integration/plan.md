@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — phase 4 in progress
+**Status** — phase 5 in progress
 **Research** — `research.md`
 
 ## Context
@@ -123,7 +123,7 @@ including a check that the fake client recorded exactly one call for a multi-met
 
 ## Phase 5 — Agent Framework package
 
-**Status** — not started
+**Status** — done
 **Rests on** — Phase 3 done; `LoopEvaluator`, `LoopContext`, `LoopEvaluation` and the function
 middleware signature still match `research.md § Microsoft Agent Framework loop evaluation` and
 `§ Microsoft Agent Framework function-calling middleware and approvals` in `Microsoft.Agents.AI` 1.22.0 or later.
@@ -134,18 +134,18 @@ middleware signature still match `research.md § Microsoft Agent Framework loop 
 - What state the gate may rely on as "validated arguments", since the docs don't say arguments
   are validated before middleware; answer goes in `research.md § Microsoft Agent Framework function-calling middleware and approvals`.
 **Tasks**
-- [ ] Create `src/SystemOneSharp.AgentFramework` referencing core, Extensions.AI and
+- [x] Create `src/SystemOneSharp.AgentFramework` referencing core, Extensions.AI and
       `Microsoft.Agents.AI`, not the evaluation package — design §11, §26.
-- [ ] Implement `SystemOneCompletionLoopEvaluator` with an explicit completion policy (threshold
+- [x] Implement `SystemOneCompletionLoopEvaluator` with an explicit completion policy (threshold
       or delegate), no own iteration cap, no generated feedback, stateless across runs — design
       §12–§14; failure-handling reference in `research.md § The Microsoft decision abstraction and the overlapping MAF PR`.
-- [ ] Implement function-call gating as function middleware that classifies the proposed call
+- [x] Implement function-call gating as function middleware that classifies the proposed call
       and hands a disposition to application policy — design §15, §16; middleware shape in `research.md`.
-- [ ] Route the "review" disposition to application code or MAF's existing approval mechanism,
+- [x] Route the "review" disposition to application code or MAF's existing approval mechanism,
       never a home-grown HITL flow, and never let a classification override authorization —
       design §15, §16; `ApprovalRequiredAIFunction` in `research.md`.
-- [ ] Add no executor, router or workflow wrapper — design §11 and non-goals.
-- [ ] Add the loop and gate scenarios from design §20 to the integration harness.
+- [x] Add no executor, router or workflow wrapper — design §11 and non-goals.
+- [x] Add the loop and gate scenarios from design §20 to the integration harness.
 **Done when** — Release build warning-free; integration harness passes: below-threshold →
 Continue, above → Stop, allow → function runs, block → function does not run, cancellation and
 exceptions propagate.
@@ -224,3 +224,19 @@ both harnesses. The CI run itself is checked on the next push.
   constructor parameter and no options class was added. Done when: build 0 warnings; both harnesses
   pass (integration adds 15 evaluation checks, including "several evaluator metrics → one DecideAsync
   call" with `client.Requests.Count == 1`); no `Microsoft.Agents` package in the evaluation assets.
+- 2026-09-25, phase 5 — Added `src/SystemOneSharp.AgentFramework` (`Microsoft.Agents.AI` `1.22.0`).
+  `SystemOneCompletionLoopEvaluator` + options: one Noul over initial messages + latest response via
+  the shared projection; completion policy is exactly one of `CompletionThreshold` or `IsComplete`
+  (no default, constructor rejects neither/both); optional fixed `ContinueFeedback`; no own iteration
+  cap; marked `[Experimental("MAAI001")]` (`research.md § [Experimental] on LoopEvaluator`).
+  `SystemOneFunctionGate` + options/classification/decision + `UseSystemOneFunctionGate`: one Choice
+  over function name/description, the arguments about to be invoked, trailing conversation and
+  optional `policy_context`; application `Policy` returns `Invoke()` (calls `next`, so later
+  authorization still runs) or `Block(result)`; review handling is the policy's job, no HITL added.
+  Arguments are projected through `SystemOneAiState`, so there is still one serializer. Decision on
+  failures in both: `DecideAsync` exceptions propagate unchanged, and the gate then does not invoke
+  the function. Done when: build 0 warnings; both harnesses pass; integration adds 17 MAF checks run
+  through real `ChatClientAgent`/`LoopAgent` instances over a scripted `IChatClient` (below
+  threshold → Continue, above → Stop, LoopAgent runs twice for 0.2 then 0.99, allow → function runs,
+  block → function not run and model sees the block result, cancellation and exceptions propagate);
+  `SystemOneSharp.AgentFramework.csproj` does not reference the evaluation package.

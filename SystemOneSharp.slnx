@@ -3,6 +3,7 @@
     <Project Path="examples/SystemOneSharp.Example/SystemOneSharp.Example.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/SystemOneSharp.AgentFramework/SystemOneSharp.AgentFramework.csproj" />
     <Project Path="src/SystemOneSharp.Extensions.AI.Evaluation/SystemOneSharp.Extensions.AI.Evaluation.csproj" />
     <Project Path="src/SystemOneSharp.Extensions.AI/SystemOneSharp.Extensions.AI.csproj" />
     <Project Path="src/SystemOneSharp/SystemOneSharp.csproj" />
