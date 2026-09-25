@@ -240,8 +240,8 @@ both harnesses. The CI run itself is checked on the next push.
   threshold → Continue, above → Stop, LoopAgent runs twice for 0.2 then 0.99, allow → function runs,
   block → function not run and model sees the block result, cancellation and exceptions propagate);
   `SystemOneSharp.AgentFramework.csproj` does not reference the evaluation package.
-- 2026-09-25, phase 6 — Version set to `0.2.0-preview.1` (default, recorded in `research.md § Release`;
-  not user-confirmed). Added `examples/SystemOneSharp.MicrosoftAI.Example` (five scenarios; scripted
+- 2026-09-25, phase 6 — Version set to `0.2.0-preview.1` (recorded in `research.md § Release`;
+  confirmed by the user). Added `examples/SystemOneSharp.MicrosoftAI.Example` (five scenarios; scripted
   stand-in chat model, live System One calls) and ran it against the user's local Laya
   (`laya-rl-agent`): exit 0, all five sections produced output. The first run exposed a workflow
   bug in the example itself (void `ValueTask` executors declare no outputs, so `YieldOutputAsync`

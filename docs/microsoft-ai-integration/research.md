@@ -260,7 +260,7 @@ is not a reference to `SystemOneSharp.Extensions.AI.Evaluation`, so design §11 
 
 ### Release
 
-`v0.1.0-preview.1` is published. Decision (default, not user-confirmed): the first multi-package
+`v0.1.0-preview.1` is published. Decision (confirmed by the user 2026-09-25): the first multi-package
 release is `0.2.0-preview.1` — new public API in a 0.x preview is a minor bump, and it stays a
 prerelease because `SystemOneSharp.AgentFramework` builds on experimental MAF types. Changing it is
 one line in `Directory.Build.props`.
