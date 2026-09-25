@@ -149,3 +149,22 @@ Checked 2026-09-25 via `gh`.
   `v0.1.0-preview.1` is taken.
 - **Which MAF package the workflow example needs** (workflows live outside `Microsoft.Agents.AI`;
   not checked) — carried into phase 6's `Settle first`.
+
+## Execution, phase 1 — 2026-09-25
+
+### Dependabot and `Directory.Packages.props`
+
+Dependabot's `nuget` ecosystem updates `PackageVersion` items in a single root
+`Directory.Packages.props`; known failures involve several such files or `VersionOverride`,
+neither of which this repo uses. No change to `.github/dependabot.yml` needed.
+
+Sources: [dependabot-core#4261](https://github.com/dependabot/dependabot-core/issues/4261),
+[dependabot-core#12149](https://github.com/dependabot/dependabot-core/issues/12149), checked 2026-09-25.
+
+### SourceLink as `GlobalPackageReference` loses repository branch/commit
+
+Declaring `Microsoft.SourceLink.GitHub` 10.0.401 as a CPM `GlobalPackageReference` still restored
+it, but the packed nuspec's `<repository>` element lost its `branch` and `commit` attributes. A
+plain `PackageReference ... PrivateAssets="all"` (version central) restores them. Cause not
+investigated further; observed in this repo on the .NET 10 SDK, 2026-09-25.
+

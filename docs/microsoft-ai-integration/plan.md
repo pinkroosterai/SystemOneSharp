@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — not started
+**Status** — phase 1 in progress
 **Research** — `research.md`
 
 ## Context
@@ -22,21 +22,21 @@ changing established behaviour. Phases 4 and 5 both depend only on phase 3 and c
 
 ## Phase 1 — Repository configuration
 
-**Status** — not started
+**Status** — done
 **Rests on** — `src/SystemOneSharp/SystemOneSharp.csproj` still holds all shared package
 properties and the SourceLink reference; `release.yml` still reads `<Version>` from that file.
 **Settle first** — Whether Dependabot's `nuget` ecosystem updates versions in
 `Directory.Packages.props`; answer goes in `research.md § Package versions`.
 **Tasks**
-- [ ] Move shared build and package settings into a root `Directory.Build.props`, leaving
+- [x] Move shared build and package settings into a root `Directory.Build.props`, leaving
       package-specific ones (ID, description, tags, README) in each project — list in design §1,
       current values in `src/SystemOneSharp/SystemOneSharp.csproj`.
-- [ ] Mark test, example and future test-support projects non-packable so the root settings
+- [x] Mark test, example and future test-support projects non-packable so the root settings
       don't make them packages — projects under `tests/` and `examples/`.
-- [ ] Introduce central package management for every external package reference, starting with
+- [x] Introduce central package management for every external package reference, starting with
       SourceLink — current reference in `src/SystemOneSharp/SystemOneSharp.csproj`.
-- [ ] Make the release tag check read the version from `Directory.Build.props` — `.github/workflows/release.yml`.
-- [ ] Confirm the packed core package is unchanged in ID, version, README and symbols — compare
+- [x] Make the release tag check read the version from `Directory.Build.props` — `.github/workflows/release.yml`.
+- [x] Confirm the packed core package is unchanged in ID, version, README and symbols — compare
       against a pack from before the change.
 **Done when** — Release build is warning-free, `tests/SystemOneSharp.Verification` passes, and
 `dotnet pack src/SystemOneSharp` yields `SystemOneSharp.<same version>.nupkg` plus `.snupkg`
@@ -176,3 +176,13 @@ yields four `.nupkg` at the same version; both workflow files reference all four
 both harnesses. The CI run itself is checked on the next push.
 
 ## Log
+
+- 2026-09-25, phase 1 — Added `Directory.Build.props` (shared build, package, symbol settings and
+  the SourceLink reference) and `Directory.Packages.props` (central versions). Test and example
+  projects set `IsPackable=false`. `release.yml` reads the version via
+  `dotnet msbuild -getProperty:Version` instead of `sed` on one `.csproj`. SourceLink first went in
+  as a `GlobalPackageReference`; that dropped `branch`/`commit` from the nuspec, so it is a normal
+  `PackageReference` in `Directory.Build.props` with its version central. Done when: build 0
+  warnings, 47 PASS + "All SystemOneSharp verification checks passed.", solution pack yields only
+  `SystemOneSharp.0.1.0-preview.1.nupkg`/`.snupkg`, nuspec and file list identical to a pre-change
+  pack except the commit hash.

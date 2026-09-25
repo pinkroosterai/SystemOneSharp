@@ -18,7 +18,7 @@ jobs:
           dotnet-version: 10.0.x
       - name: Check tag matches project version
         run: |
-          version=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/SystemOneSharp/SystemOneSharp.csproj)
+          version=$(dotnet msbuild src/SystemOneSharp/SystemOneSharp.csproj -getProperty:Version)
           [ "v$version" = "$GITHUB_REF_NAME" ] || { echo "Tag $GITHUB_REF_NAME does not match version $version"; exit 1; }
       - run: dotnet build SystemOneSharp.slnx -c Release
       - run: dotnet run --project tests/SystemOneSharp.Verification -c Release --no-build
