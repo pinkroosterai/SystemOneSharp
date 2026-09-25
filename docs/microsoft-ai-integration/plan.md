@@ -4,7 +4,7 @@
 `SystemOneSharp.AgentFramework` beside the core package, all on one repository-wide version, done
 when `dotnet build SystemOneSharp.slnx -c Release` is warning-free, both verification harnesses
 pass with no service or key, and packing produces all four `.nupkg` files at the same version.
-**Status** — phase 2 in progress
+**Status** — phase 3 in progress
 **Research** — `research.md`
 
 ## Context
@@ -73,28 +73,28 @@ listed in its output; `SystemOneSharp.csproj` still references no Microsoft AI p
 
 ## Phase 3 — Extensions.AI package, shared test support, integration harness
 
-**Status** — not started
+**Status** — done
 **Rests on** — Phase 2 done (the projection uses the new state overloads); MEAI Abstractions
 `10.10.0` is still the version MAF and Evaluation depend on (`research.md § Package versions`).
 **Settle first** — How argument values and function results (`object?`) are serialized into
 the projection, e.g. whether MEAI's `AIJsonUtilities.DefaultOptions` is used; answer goes in
 `research.md § Microsoft.Extensions.AI content types`.
 **Tasks**
-- [ ] Create `src/SystemOneSharp.Extensions.AI` referencing only the core and
+- [x] Create `src/SystemOneSharp.Extensions.AI` referencing only the core and
       `Microsoft.Extensions.AI.Abstractions` — design §6, §26.
-- [ ] Implement the single conversation projection with its own stable JSON schema, options,
+- [x] Implement the single conversation projection with its own stable JSON schema, options,
       and the builder / `ChatMessage` extensions — design §6 (schema example, the three supported
       content types, the exclusions list); API names in the design doc's "Initial public API target".
-- [ ] Make unsupported content types behave predictably and document how — design §6 "add other
+- [x] Make unsupported content types behave predictably and document how — design §6 "add other
       types only when semantics are clear"; type list in `research.md § Microsoft.Extensions.AI content types`.
-- [ ] Add no decision-client abstraction and no `IChatClient` — design §7 and non-goals.
-- [ ] Create the non-packable `tests/SystemOneSharp.Testing` with the fake client and canonical
+- [x] Add no decision-client abstraction and no `IChatClient` — design §7 and non-goals.
+- [x] Create the non-packable `tests/SystemOneSharp.Testing` with the fake client and canonical
       answers — design §18.
-- [ ] Create `tests/SystemOneSharp.Integrations.Verification` as a console harness in the same
+- [x] Create `tests/SystemOneSharp.Integrations.Verification` as a console harness in the same
       `Check(...)` style as the core harness — design §19; pattern in `tests/SystemOneSharp.Verification/Program.cs`.
-- [ ] Cover the three projection scenarios from design §20 plus: excluded properties absent,
+- [x] Cover the three projection scenarios from design §20 plus: excluded properties absent,
       stable output for identical input.
-- [ ] Add the new projects to `SystemOneSharp.slnx`.
+- [x] Add the new projects to `SystemOneSharp.slnx`.
 **Done when** — Release build warning-free; both harnesses pass; the projection is the only
 code in `src/` that reads `ChatMessage` contents (grep for `FunctionCallContent` hits only this
 package).
@@ -198,3 +198,15 @@ both harnesses. The CI run itself is checked on the next push.
   JsonElement and JsonTypeInfo state, `routing` preserved, span name/kind/tags/status, retry count,
   API and transport failure `error.type`, no state/instructions/key in tags); core `.csproj` has no
   package references.
+- 2026-09-25, phase 3 — Added `src/SystemOneSharp.Extensions.AI` (MEAI Abstractions `10.10.1`):
+  `SystemOneAiState.Create`, `SystemOneAiStateOptions` (`SerializerOptions`,
+  `ThrowOnUnsupportedContent`), and `ToSystemOneState` / `WithConversation` extensions. Assumption:
+  the builder extension is `WithConversation`, not the design doc's conceptual `WithState(messages)`,
+  because the instance `WithState<T>(T)` would bind first and reflection-serialize whole
+  `ChatMessage` objects. Unsupported content is skipped by default (turn kept with empty `contents`)
+  and throws `NotSupportedException` when configured. Added non-packable `tests/SystemOneSharp.Testing`
+  (`FakeSystemOneClient`, `SystemOneAnswers`, `SystemOneResponses`, `Verify`) and
+  `tests/SystemOneSharp.Integrations.Verification` (one checks file per package). Done when: build 0
+  warnings; core harness and integration harness both print their "All ... passed." line (10
+  integration checks); grep for `FunctionCallContent|ChatMessage` in `src/` hits only
+  `src/SystemOneSharp.Extensions.AI/SystemOneAiState.cs`.

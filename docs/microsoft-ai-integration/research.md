@@ -189,3 +189,21 @@ attribute names may change upstream — this is recorded next to the constants i
 
 Source: [gen-ai-spans.md](https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-spans.md), checked 2026-09-25.
 
+## Execution, phase 3 — 2026-09-25
+
+### Projection serialization
+
+Function-call arguments (`IDictionary<string, object?>`) and function results (`object?`) are
+serialized with `AIJsonUtilities.DefaultOptions` unless the caller passes other options. It is
+MEAI's own default, carries source-generated contracts for MEAI exchange types (Native AOT safe),
+and uses string enums and relaxed escaping. `WriteIndented` does not matter because the projection
+produces a `JsonNode`, not text.
+
+Source: [AIJsonUtilities.DefaultOptions](https://learn.microsoft.com/dotnet/api/microsoft.extensions.ai.aijsonutilities.defaultoptions), checked 2026-09-25.
+
+### Package versions (update)
+
+`Microsoft.Extensions.AI.Abstractions` now has `10.10.1` (latest stable); `Microsoft.Extensions.AI.Evaluation`
+`10.10.0` and `Microsoft.Agents.AI` `1.22.0` are unchanged. Both still require MEAI `>= 10.10.0`,
+so `10.10.1` is compatible. Checked on the NuGet flat-container index, 2026-09-25.
+

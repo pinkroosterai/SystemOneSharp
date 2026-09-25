@@ -3,9 +3,12 @@
     <Project Path="examples/SystemOneSharp.Example/SystemOneSharp.Example.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="src/SystemOneSharp.Extensions.AI/SystemOneSharp.Extensions.AI.csproj" />
     <Project Path="src/SystemOneSharp/SystemOneSharp.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/SystemOneSharp.Integrations.Verification/SystemOneSharp.Integrations.Verification.csproj" />
+    <Project Path="tests/SystemOneSharp.Testing/SystemOneSharp.Testing.csproj" />
     <Project Path="tests/SystemOneSharp.Verification/SystemOneSharp.Verification.csproj" />
   </Folder>
 </Solution>
