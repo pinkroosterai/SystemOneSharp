@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+First stable release. The code and public API are the same as `0.2.0-preview.1`; all four packages drop the prerelease suffix. `SystemOneCompletionLoopEvaluator` stays marked experimental (`MAAI001`) because Agent Framework's `LoopEvaluator` is.
+
 ## 0.2.0-preview.1
 
 New packages, all released at the same version as the core:

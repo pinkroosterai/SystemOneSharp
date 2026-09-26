@@ -3,7 +3,7 @@
 System One components for [Microsoft Agent Framework](https://learn.microsoft.com/agent-framework/): a loop evaluator that decides whether an agent is done, and function-calling middleware that classifies a tool call before it runs.
 
 ```text
-dotnet add package SystemOneSharp.AgentFramework --prerelease
+dotnet add package SystemOneSharp.AgentFramework
 ```
 
 It depends on `SystemOneSharp`, `SystemOneSharp.Extensions.AI` and `Microsoft.Agents.AI`. It does not depend on the evaluation package.

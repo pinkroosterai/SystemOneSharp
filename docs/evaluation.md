@@ -3,7 +3,7 @@
 An [`IEvaluator`](https://learn.microsoft.com/dotnet/ai/evaluation/libraries) for Microsoft.Extensions.AI.Evaluation. It sends one System One request per evaluation and reports each answer as a metric. Several metrics cost one inference.
 
 ```text
-dotnet add package SystemOneSharp.Extensions.AI.Evaluation --prerelease
+dotnet add package SystemOneSharp.Extensions.AI.Evaluation
 ```
 
 It depends on `SystemOneSharp`, `SystemOneSharp.Extensions.AI` and `Microsoft.Extensions.AI.Evaluation`. It does not depend on Agent Framework.

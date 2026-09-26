@@ -8,7 +8,7 @@
 
   <!-- One version for every package in the repository; release.yml checks the tag against it. -->
   <PropertyGroup>
-    <Version>0.2.0-preview.1</Version>
+    <Version>0.2.0</Version>
     <Authors>Jan Versteeg</Authors>
     <PackageProjectUrl>https://github.com/pinkroosterai/SystemOneSharp</PackageProjectUrl>
     <RepositoryUrl>https://github.com/pinkroosterai/SystemOneSharp</RepositoryUrl>

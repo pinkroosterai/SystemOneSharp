@@ -3,7 +3,7 @@
 Turns a [Microsoft.Extensions.AI](https://learn.microsoft.com/dotnet/ai/microsoft-extensions-ai) conversation into System One state. It is the one projection the evaluation and Agent Framework packages also use, so a conversation looks the same to System One wherever it comes from.
 
 ```text
-dotnet add package SystemOneSharp.Extensions.AI --prerelease
+dotnet add package SystemOneSharp.Extensions.AI
 ```
 
 It depends on `SystemOneSharp` and `Microsoft.Extensions.AI.Abstractions` only.
