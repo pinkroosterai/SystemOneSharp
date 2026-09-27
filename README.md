@@ -1,6 +1,21 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/pinkroosterai/Persistify/main/img/logo_transparent.png" alt="PinkRooster logo" width="200" />
+
 # SystemOneSharp
 
-[![CI](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml) [![NuGet](https://img.shields.io/nuget/v/SystemOneSharp.svg)](https://www.nuget.org/packages/SystemOneSharp)
+**Typed System One decisions for .NET.**
+
+[![CI](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml/badge.svg)](https://github.com/pinkroosterai/SystemOneSharp/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/SystemOneSharp.svg)](https://www.nuget.org/packages/SystemOneSharp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/pinkroosterai/SystemOneSharp/blob/master/LICENSE)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
+
+[Install](#install-and-requirements) · [Quick start](#quick-start) · [Microsoft AI integrations](#microsoft-ai-integrations) · [Build and verify](#build-and-verify)
+
+</div>
+
+---
 
 A .NET 10 HTTP client for TypeSafe Jev and the Jev-compatible local Laya server. It sends a shared `POST /v1/systemone` request and returns typed Choice, Score, and Noul answers. The library has no runtime package dependencies.
 
