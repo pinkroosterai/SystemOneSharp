@@ -38,7 +38,7 @@ Do not use this skill to implement business logic, thresholds, model selection, 
 
 ## Read the current builder first
 
-Before editing, read `src/SystemOneSharp/SystemOneRequestBuilder.cs`, `src/SystemOneSharp/SystemOneRequestValidator.cs`, `SPEC.md`, and the builder being created or modified.
+Before editing, read `src/SystemOneSharp/SystemOneRequestBuilder.cs`, `src/SystemOneSharp/SystemOneRequestValidator.cs`, `README.md`, and the builder being created or modified.
 
 If repository behavior differs from this skill, follow the repository.
 

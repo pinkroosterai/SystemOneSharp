@@ -6,3 +6,16 @@
 TestResults/
 .env
 .env.*
+
+# Internal working files: kept locally, not published
+CLAUDE.md
+PLAN.md
+SPEC.md
+REFERENCE_GUIDE.md
+tasks/
+.claude/
+.idea/
+docs/SystemOneSharp Microsoft AI Integration Plan.md
+docs/microsoft-ai-integration/
+docs/public-release-plan.md
+docs/release-readiness.md
